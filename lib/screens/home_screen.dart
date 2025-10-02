@@ -3,6 +3,7 @@ import 'config_screen.dart';
 import 'etiqueta_screen.dart';
 import 'consulta_preco_screen.dart';
 import 'inventario_screen.dart';
+import 'entrada_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -40,6 +41,15 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => const InventarioScreen(),
+      ),
+    );
+  }
+
+  void _abrirEntrada() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EntradaScreen(),
       ),
     );
   }
@@ -152,6 +162,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.purple,
+                    foregroundColor: Colors.white,
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: _abrirEntrada,
+                  icon: const Icon(Icons.input, size: 24),
+                  label: const Text(
+                    'Entrada',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal,
                     foregroundColor: Colors.white,
                     elevation: 4,
                     shape: RoundedRectangleBorder(

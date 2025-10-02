@@ -118,7 +118,9 @@ class _ConfigScreenState extends State<ConfigScreen> {
       porta: _portaController.text.trim(),
     );
 
-    if (success && mounted) {
+    if (!mounted) return;
+
+    if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Configuração salva com sucesso!'),
@@ -127,22 +129,16 @@ class _ConfigScreenState extends State<ConfigScreen> {
       );
       
       // Navega baseado na origem
-      if (mounted) {
-        if (widget.fromScreen == 'home') {
-          // Se veio da tela principal, volta para ela
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const HomeScreen()),
-            );
-          }
-        } else {
-          // Se veio da tela de login ou splash, vai para login
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-            );
-          }
-        }
+      if (widget.fromScreen == 'home') {
+        // Se veio da tela principal, volta para ela
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      } else {
+        // Se veio da tela de login ou splash, vai para login
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
       }
     }
   }

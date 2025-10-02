@@ -9,6 +9,7 @@ class StorageService {
   static const String _configKey = 'app_config';
   static const String _etiquetasKey = 'etiquetas_pendentes';
   static const String _inventarioKey = 'inventario_itens';
+  static const String _entradaKey = 'entrada_itens';
 
   /// Salva a configuração no armazenamento local
   static Future<bool> saveConfig(AppConfig config) async {
@@ -190,6 +191,77 @@ class StorageService {
       return prefs.containsKey(_inventarioKey);
     } catch (e) {
       debugPrint('Erro ao verificar itens de inventário: $e');
+      return false;
+    }
+  }
+
+  /// Salva a lista de itens de entrada no armazenamento local
+  static Future<bool> saveEntradaItens(List<InventarioItem> itens) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final itensJson = jsonEncode(itens.map((item) => {
+        'item': item.item,
+        'codigo': item.codigo,
+        'barras': item.barras,
+        'produto': item.produto,
+        'unidade': item.unidade,
+        'estoqueAtual': item.estoqueAtual,
+        'novoEstoque': item.novoEstoque,
+        'dtCriacao': item.dtCriacao.toIso8601String(),
+      }).toList());
+      return await prefs.setString(_entradaKey, itensJson);
+    } catch (e) {
+      debugPrint('Erro ao salvar itens de entrada: $e');
+      return false;
+    }
+  }
+
+  /// Carrega a lista de itens de entrada do armazenamento local
+  static Future<List<InventarioItem>> loadEntradaItens() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final itensJson = prefs.getString(_entradaKey);
+      
+      if (itensJson == null) return [];
+      
+      final itensList = jsonDecode(itensJson) as List<dynamic>;
+      return itensList.map((json) {
+        final data = json as Map<String, dynamic>;
+        return InventarioItem(
+          item: data['item'] ?? 0,
+          codigo: data['codigo'] ?? 0,
+          barras: data['barras'] ?? '',
+          produto: data['produto'] ?? '',
+          unidade: data['unidade'] ?? '',
+          estoqueAtual: (data['estoqueAtual'] as num?)?.toDouble() ?? 0.0,
+          novoEstoque: (data['novoEstoque'] as num?)?.toDouble() ?? 0.0,
+          dtCriacao: DateTime.parse(data['dtCriacao'] ?? DateTime.now().toIso8601String()),
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('Erro ao carregar itens de entrada: $e');
+      return [];
+    }
+  }
+
+  /// Remove todos os itens de entrada do armazenamento local
+  static Future<bool> clearEntradaItens() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return await prefs.remove(_entradaKey);
+    } catch (e) {
+      debugPrint('Erro ao limpar itens de entrada: $e');
+      return false;
+    }
+  }
+
+  /// Verifica se existem itens de entrada salvos
+  static Future<bool> hasEntradaItens() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.containsKey(_entradaKey);
+    } catch (e) {
+      debugPrint('Erro ao verificar itens de entrada: $e');
       return false;
     }
   }

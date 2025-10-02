@@ -130,40 +130,62 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
 
   Future<void> _abrirScanner() async {
     try {
+      debugPrint('EtiquetaScreen: Iniciando scanner...');
       final codigo = await ScannerService.scanBarcode(context);
+      debugPrint('EtiquetaScreen: Scanner retornou código: $codigo');
+      
       if (codigo != null && codigo.isNotEmpty) {
+        debugPrint('EtiquetaScreen: Código válido recebido, definindo no controller...');
         _codigoController.text = codigo;
-        _pesquisarProduto();
+        debugPrint('EtiquetaScreen: Iniciando pesquisa do produto...');
+        await _pesquisarProduto();
+        debugPrint('EtiquetaScreen: Pesquisa do produto concluída');
+      } else {
+        debugPrint('EtiquetaScreen: Código vazio ou nulo recebido do scanner');
       }
     } catch (e) {
-      _showMessage('Erro ao abrir scanner: $e');
+      debugPrint('EtiquetaScreen: Erro no scanner: $e');
+      if (mounted) {
+        _showMessage('Erro ao abrir scanner: $e');
+      }
     }
   }
 
   Future<void> _pesquisarProduto() async {
+    debugPrint('EtiquetaScreen: Iniciando _pesquisarProduto...');
+    
     if (_codigoController.text.trim().isEmpty) {
+      debugPrint('EtiquetaScreen: Código vazio, abortando pesquisa');
       _showMessage('Por favor, digite um código de barras');
       return;
     }
 
+    debugPrint('EtiquetaScreen: Código para pesquisa: ${_codigoController.text.trim()}');
+    
     setState(() {
       _isSearching = true;
     });
 
     try {
+      debugPrint('EtiquetaScreen: Obtendo configuração...');
       final configProvider = Provider.of<ConfigProvider>(context, listen: false);
       
       // Configura a API se necessário
       if (configProvider.config.endereco.isNotEmpty && configProvider.config.porta.isNotEmpty) {
         final baseUrl = 'http://${configProvider.config.endereco}:${configProvider.config.porta}/api';
+        debugPrint('EtiquetaScreen: Configurando API com baseUrl: $baseUrl');
         ApiService.instance.configure(baseUrl);
       }
 
       // Busca o produto na API
+      debugPrint('EtiquetaScreen: Iniciando busca na API...');
       final produtoData = await ApiService.instance.buscarProdutoFV(_codigoController.text.trim());
+      debugPrint('EtiquetaScreen: Busca na API concluída. Produto encontrado: ${produtoData != null}');
       
       if (produtoData != null) {
+        debugPrint('EtiquetaScreen: Verificando se widget ainda está montado...');
         if (mounted) {
+          debugPrint('EtiquetaScreen: Widget montado, processando produto...');
           final novoProduto = Produto.fromJson(produtoData, _contadorItens);
           
           // Define o tipo de etiqueta global se disponível
@@ -171,33 +193,48 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
             novoProduto.tipoEtiqueta = _tipoEtiquetaGlobal!.nome;
           }
           
+          debugPrint('EtiquetaScreen: Adicionando produto à lista...');
           setState(() {
             _produtosPesquisados.add(novoProduto);
             _contadorItens++;
           });
           
           // Salva automaticamente as etiquetas
-          _salvarEtiquetas();
+          debugPrint('EtiquetaScreen: Salvando etiquetas...');
+          await _salvarEtiquetas();
           
           // Limpa o campo de código para próxima pesquisa
+          debugPrint('EtiquetaScreen: Limpando campo de código...');
           _codigoController.clear();
+          debugPrint('EtiquetaScreen: Exibindo mensagem de sucesso...');
           _showMessage('Produto adicionado à lista!');
+          debugPrint('EtiquetaScreen: Processo concluído com sucesso!');
+        } else {
+          debugPrint('EtiquetaScreen: Widget não está mais montado, abortando processamento');
         }
       } else {
+        debugPrint('EtiquetaScreen: Produto não encontrado na API');
         if (mounted) {
           _showMessage('Produto não encontrado');
         }
       }
     } catch (e) {
+      debugPrint('EtiquetaScreen: Erro durante pesquisa: $e');
+      debugPrint('EtiquetaScreen: Stack trace: ${StackTrace.current}');
       if (mounted) {
         _showMessage('Erro ao pesquisar produto: $e');
       }
     } finally {
+      debugPrint('EtiquetaScreen: Finalizando pesquisa...');
       if (mounted) {
+        debugPrint('EtiquetaScreen: Widget montado, definindo _isSearching = false');
         setState(() {
           _isSearching = false;
         });
+      } else {
+        debugPrint('EtiquetaScreen: Widget não montado, não atualizando estado');
       }
+      debugPrint('EtiquetaScreen: _pesquisarProduto finalizada');
     }
   }
 
