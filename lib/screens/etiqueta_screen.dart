@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/config_provider.dart';
 import '../services/api_service.dart';
-import '../services/storage_service.dart';
 import '../services/scanner_service.dart';
+import '../services/storage_service.dart';
+import '../services/feedback_service.dart';
+import '../services/logger_service.dart';
 import '../models/produto.dart';
 import '../models/etiqueta_coletor.dart';
 
@@ -116,7 +118,7 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Erro ao carregar etiquetas salvas: $e');
+      LoggerService.e('Erro ao carregar etiquetas salvas: $e');
     }
   }
 
@@ -124,27 +126,28 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
     try {
       await StorageService.saveEtiquetas(_produtosPesquisados);
     } catch (e) {
-      debugPrint('Erro ao salvar etiquetas: $e');
+      LoggerService.e('Erro ao salvar etiquetas: $e');
     }
   }
 
   Future<void> _abrirScanner() async {
     try {
-      debugPrint('EtiquetaScreen: Iniciando scanner...');
+      LoggerService.d('EtiquetaScreen: Iniciando scanner...');
       final codigo = await ScannerService.scanBarcode(context);
-      debugPrint('EtiquetaScreen: Scanner retornou código: $codigo');
+      if (!mounted) return;
+      LoggerService.d('EtiquetaScreen: Scanner retornou código: $codigo');
       
       if (codigo != null && codigo.isNotEmpty) {
-        debugPrint('EtiquetaScreen: Código válido recebido, definindo no controller...');
+        LoggerService.d('EtiquetaScreen: Código válido recebido, definindo no controller...');
         _codigoController.text = codigo;
-        debugPrint('EtiquetaScreen: Iniciando pesquisa do produto...');
+        LoggerService.d('EtiquetaScreen: Iniciando pesquisa do produto...');
         await _pesquisarProduto();
-        debugPrint('EtiquetaScreen: Pesquisa do produto concluída');
+        LoggerService.d('EtiquetaScreen: Pesquisa do produto concluída');
       } else {
-        debugPrint('EtiquetaScreen: Código vazio ou nulo recebido do scanner');
+        LoggerService.d('EtiquetaScreen: Código vazio ou nulo recebido do scanner');
       }
     } catch (e) {
-      debugPrint('EtiquetaScreen: Erro no scanner: $e');
+      LoggerService.e('EtiquetaScreen: Erro no scanner: $e');
       if (mounted) {
         _showMessage('Erro ao abrir scanner: $e');
       }
@@ -152,40 +155,40 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
   }
 
   Future<void> _pesquisarProduto() async {
-    debugPrint('EtiquetaScreen: Iniciando _pesquisarProduto...');
+    LoggerService.d('EtiquetaScreen: Iniciando _pesquisarProduto...');
     
     if (_codigoController.text.trim().isEmpty) {
-      debugPrint('EtiquetaScreen: Código vazio, abortando pesquisa');
+      LoggerService.d('EtiquetaScreen: Código vazio, abortando pesquisa');
       _showMessage('Por favor, digite um código de barras');
       return;
     }
 
-    debugPrint('EtiquetaScreen: Código para pesquisa: ${_codigoController.text.trim()}');
+    LoggerService.d('EtiquetaScreen: Código para pesquisa: ${_codigoController.text.trim()}');
     
     setState(() {
       _isSearching = true;
     });
 
     try {
-      debugPrint('EtiquetaScreen: Obtendo configuração...');
+      LoggerService.d('EtiquetaScreen: Obtendo configuração...');
       final configProvider = Provider.of<ConfigProvider>(context, listen: false);
       
       // Configura a API se necessário
       if (configProvider.config.endereco.isNotEmpty && configProvider.config.porta.isNotEmpty) {
         final baseUrl = 'http://${configProvider.config.endereco}:${configProvider.config.porta}/api';
-        debugPrint('EtiquetaScreen: Configurando API com baseUrl: $baseUrl');
+        LoggerService.d('EtiquetaScreen: Configurando API com baseUrl: $baseUrl');
         ApiService.instance.configure(baseUrl);
       }
 
       // Busca o produto na API
-      debugPrint('EtiquetaScreen: Iniciando busca na API...');
+      LoggerService.d('EtiquetaScreen: Iniciando busca na API...');
       final produtoData = await ApiService.instance.buscarProdutoFV(_codigoController.text.trim());
-      debugPrint('EtiquetaScreen: Busca na API concluída. Produto encontrado: ${produtoData != null}');
+      LoggerService.d('EtiquetaScreen: Busca na API concluída. Produto encontrado: ${produtoData != null}');
       
       if (produtoData != null) {
-        debugPrint('EtiquetaScreen: Verificando se widget ainda está montado...');
+        LoggerService.d('EtiquetaScreen: Verificando se widget ainda está montado...');
         if (mounted) {
-          debugPrint('EtiquetaScreen: Widget montado, processando produto...');
+          LoggerService.d('EtiquetaScreen: Widget montado, processando produto...');
           final novoProduto = Produto.fromJson(produtoData, _contadorItens);
           
           // Define o tipo de etiqueta global se disponível
@@ -193,48 +196,47 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
             novoProduto.tipoEtiqueta = _tipoEtiquetaGlobal!.nome;
           }
           
-          debugPrint('EtiquetaScreen: Adicionando produto à lista...');
+          LoggerService.d('EtiquetaScreen: Adicionando produto à lista...');
           setState(() {
             _produtosPesquisados.add(novoProduto);
             _contadorItens++;
           });
           
           // Salva automaticamente as etiquetas
-          debugPrint('EtiquetaScreen: Salvando etiquetas...');
+          LoggerService.d('EtiquetaScreen: Salvando etiquetas...');
           await _salvarEtiquetas();
           
           // Limpa o campo de código para próxima pesquisa
-          debugPrint('EtiquetaScreen: Limpando campo de código...');
+          LoggerService.d('EtiquetaScreen: Limpando campo de código...');
           _codigoController.clear();
-          debugPrint('EtiquetaScreen: Exibindo mensagem de sucesso...');
+          LoggerService.d('EtiquetaScreen: Exibindo mensagem de sucesso...');
           _showMessage('Produto adicionado à lista!');
-          debugPrint('EtiquetaScreen: Processo concluído com sucesso!');
+          LoggerService.d('EtiquetaScreen: Processo concluído com sucesso!');
         } else {
-          debugPrint('EtiquetaScreen: Widget não está mais montado, abortando processamento');
+          LoggerService.d('EtiquetaScreen: Widget não está mais montado, abortando processamento');
         }
       } else {
-        debugPrint('EtiquetaScreen: Produto não encontrado na API');
+        LoggerService.d('EtiquetaScreen: Produto não encontrado na API');
         if (mounted) {
           _showMessage('Produto não encontrado');
         }
       }
-    } catch (e) {
-      debugPrint('EtiquetaScreen: Erro durante pesquisa: $e');
-      debugPrint('EtiquetaScreen: Stack trace: ${StackTrace.current}');
+    } catch (e, st) {
+      LoggerService.e('EtiquetaScreen: Erro durante pesquisa: $e\nStack: $st');
       if (mounted) {
         _showMessage('Erro ao pesquisar produto: $e');
       }
     } finally {
-      debugPrint('EtiquetaScreen: Finalizando pesquisa...');
+      LoggerService.d('EtiquetaScreen: Finalizando pesquisa...');
       if (mounted) {
-        debugPrint('EtiquetaScreen: Widget montado, definindo _isSearching = false');
+        LoggerService.d('EtiquetaScreen: Widget montado, definindo _isSearching = false');
         setState(() {
           _isSearching = false;
         });
       } else {
-        debugPrint('EtiquetaScreen: Widget não montado, não atualizando estado');
+        LoggerService.d('EtiquetaScreen: Widget não montado, não atualizando estado');
       }
-      debugPrint('EtiquetaScreen: _pesquisarProduto finalizada');
+      LoggerService.d('EtiquetaScreen: _pesquisarProduto finalizada');
     }
   }
 
@@ -276,17 +278,21 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
       }).toList();
 
       // Envia para a API do coletor
+      LoggerService.d('EtiquetaScreen: Enviando ${etiquetas.length} etiqueta(s) para API do coletor...');
       final sucesso = await ApiService.instance.enviarEtiquetasColetor(etiquetas);
 
       if (mounted) {
         if (sucesso) {
+          LoggerService.d('EtiquetaScreen: Envio de etiquetas concluído com sucesso');
           _showMessage('${_produtosPesquisados.length} etiqueta(s) enviada(s) para o servidor!');
           _limparLista();
         } else {
+          LoggerService.e('EtiquetaScreen: Falha ao enviar etiquetas para o servidor');
           _showMessage('Erro ao enviar etiquetas para o servidor');
         }
       }
     } catch (e) {
+      LoggerService.e('EtiquetaScreen: Erro ao enviar etiquetas: $e');
       if (mounted) {
         _showMessage('Erro ao enviar etiquetas: $e');
       }
@@ -318,14 +324,12 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
   }
 
   void _showMessage(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
+    if (!mounted) return;
+    FeedbackService.showSnack(
+      context,
+      message,
+      type: FeedbackService.classifyMessage(message),
+    );
   }
 
   @override

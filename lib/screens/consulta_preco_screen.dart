@@ -3,6 +3,7 @@ import '../services/api_service.dart';
 import '../services/scanner_service.dart';
 import '../models/produto.dart';
 import 'etiqueta_screen.dart';
+import '../services/feedback_service.dart';
 
 class ConsultaPrecoScreen extends StatefulWidget {
   const ConsultaPrecoScreen({super.key});
@@ -25,6 +26,7 @@ class _ConsultaPrecoScreenState extends State<ConsultaPrecoScreen> {
   Future<void> _abrirScanner() async {
     try {
       final codigo = await ScannerService.scanBarcode(context);
+      if (!mounted) return;
       if (codigo != null && codigo.isNotEmpty) {
         _codigoController.text = codigo;
         _consultarProduto();
@@ -86,14 +88,12 @@ class _ConsultaPrecoScreenState extends State<ConsultaPrecoScreen> {
   }
 
   void _showMessage(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
+    if (!mounted) return;
+    FeedbackService.showSnack(
+      context,
+      message,
+      type: FeedbackService.classifyMessage(message),
+    );
   }
 
 

@@ -6,6 +6,8 @@ import '../providers/config_provider.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../services/scanner_service.dart';
+import '../services/feedback_service.dart';
+import '../services/logger_service.dart';
 import 'inventario_update_screen.dart';
 
 class InventarioScreen extends StatefulWidget {
@@ -55,7 +57,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Erro ao carregar itens de inventário: $e');
+      LoggerService.e('Erro ao carregar itens de inventário: $e');
     }
   }
 
@@ -63,7 +65,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
     try {
       await StorageService.saveInventarioItens(_itensInventario);
     } catch (e) {
-      debugPrint('Erro ao salvar itens de inventário: $e');
+      LoggerService.e('Erro ao salvar itens de inventário: $e');
     }
   }
 
@@ -75,7 +77,9 @@ class _InventarioScreenState extends State<InventarioScreen> {
         _pesquisarProduto();
       }
     } catch (e) {
-      _showMessage('Erro ao abrir scanner: $e');
+      if (mounted) {
+        _showMessage('Erro ao abrir scanner: $e');
+      }
     }
   }
 
@@ -103,6 +107,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
       final produto = await ApiService.instance.buscarProdutoFV(codigo);
       
       if (produto != null) {
+        if (!mounted) return;
         // Limpa o campo de código
         _codigoController.clear();
         
@@ -110,25 +115,32 @@ class _InventarioScreenState extends State<InventarioScreen> {
         final novoProduto = Produto.fromJson(produto, _contadorItens);
         _abrirTelaQuantidade(novoProduto);
       } else {
-        _showMessage('Produto não encontrado');
+        if (mounted) {
+          _showMessage('Produto não encontrado');
+        }
       }
     } catch (e) {
-      _showMessage('Erro ao pesquisar produto: $e');
+      if (mounted) {
+        _showMessage('Erro ao pesquisar produto: $e');
+      }
     } finally {
-      setState(() {
-        _isSearching = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+      }
     }
   }
 
   void _abrirTelaQuantidade(Produto produto) async {
-    final resultado = await Navigator.push<InventarioItem>(
-      context,
+    final navigator = Navigator.of(context);
+    final resultado = await navigator.push<InventarioItem>(
       MaterialPageRoute(
         builder: (context) => InventarioUpdateScreen(produto: produto),
       ),
     );
     
+    if (!mounted) return;
     if (resultado != null) {
       setState(() {
         _itensInventario.add(resultado);
@@ -168,13 +180,14 @@ class _InventarioScreenState extends State<InventarioScreen> {
   }
 
   void _abrirEdicaoItem(Produto produto, int index) async {
-    final resultado = await Navigator.push<InventarioItem>(
-      context,
+    final navigator = Navigator.of(context);
+    final resultado = await navigator.push<InventarioItem>(
       MaterialPageRoute(
         builder: (context) => InventarioUpdateScreen(produto: produto),
       ),
     );
     
+    if (!mounted) return;
     if (resultado != null) {
       setState(() {
         _itensInventario[index] = resultado;
@@ -193,6 +206,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
 
     try {
       await ApiService.instance.enviarInventario(_itensInventario);
+      if (!mounted) return;
       _showMessage('Inventário enviado com sucesso!');
       
       // Limpa a lista após envio
@@ -204,13 +218,18 @@ class _InventarioScreenState extends State<InventarioScreen> {
       // Limpa os itens salvos no armazenamento local
       await StorageService.clearInventarioItens();
     } catch (e) {
-      _showMessage('Erro ao enviar inventário: $e');
+      if (mounted) {
+        _showMessage('Erro ao enviar inventário: $e');
+      }
     }
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+    if (!mounted) return;
+    FeedbackService.showSnack(
+      context,
+      message,
+      type: FeedbackService.classifyMessage(message),
     );
   }
 

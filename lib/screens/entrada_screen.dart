@@ -4,8 +4,10 @@ import '../models/produto.dart';
 import '../models/inventario_item.dart';
 import '../providers/config_provider.dart';
 import '../services/api_service.dart';
-import '../services/storage_service.dart';
 import '../services/scanner_service.dart';
+import '../services/storage_service.dart';
+import '../services/logger_service.dart';
+import '../services/feedback_service.dart';
 import 'inventario_update_screen.dart';
 
 class EntradaScreen extends StatefulWidget {
@@ -55,7 +57,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Erro ao carregar itens de entrada: $e');
+      LoggerService.e('Erro ao carregar itens de entrada: $e');
     }
   }
 
@@ -63,7 +65,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
     try {
       await StorageService.saveEntradaItens(_itensEntrada);
     } catch (e) {
-      debugPrint('Erro ao salvar itens de entrada: $e');
+      LoggerService.e('Erro ao salvar itens de entrada: $e');
     }
   }
 
@@ -75,7 +77,9 @@ class _EntradaScreenState extends State<EntradaScreen> {
         _pesquisarProduto();
       }
     } catch (e) {
-      _showMessage('Erro ao abrir scanner: $e');
+      if (mounted) {
+        _showMessage('Erro ao abrir scanner: $e');
+      }
     }
   }
 
@@ -93,6 +97,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
 
     try {
       final configProvider = Provider.of<ConfigProvider>(context, listen: false);
+      // Removido: final navigator = Navigator.of(context);
       
       // Configura a API se necessário
       if (configProvider.config.endereco.isNotEmpty && configProvider.config.porta.isNotEmpty) {
@@ -103,6 +108,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
       final produto = await ApiService.instance.buscarProdutoFV(codigo);
       
       if (produto != null) {
+        if (!mounted) return;
         // Limpa o campo de código
         _codigoController.clear();
         
@@ -110,25 +116,32 @@ class _EntradaScreenState extends State<EntradaScreen> {
         final novoProduto = Produto.fromJson(produto, _contadorItens);
         _abrirTelaQuantidade(novoProduto);
       } else {
-        _showMessage('Produto não encontrado');
+        if (mounted) {
+          _showMessage('Produto não encontrado');
+        }
       }
     } catch (e) {
-      _showMessage('Erro ao pesquisar produto: $e');
+      if (mounted) {
+        _showMessage('Erro ao pesquisar produto: $e');
+      }
     } finally {
-      setState(() {
-        _isSearching = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+      }
     }
   }
 
   void _abrirTelaQuantidade(Produto produto) async {
-    final resultado = await Navigator.push<InventarioItem>(
-      context,
+    final navigator = Navigator.of(context);
+    final resultado = await navigator.push<InventarioItem>(
       MaterialPageRoute(
         builder: (context) => InventarioUpdateScreen(produto: produto),
       ),
     );
     
+    if (!mounted) return;
     if (resultado != null) {
       setState(() {
         _itensEntrada.add(resultado);
@@ -168,13 +181,14 @@ class _EntradaScreenState extends State<EntradaScreen> {
   }
 
   void _abrirEdicaoItem(Produto produto, int index) async {
-    final resultado = await Navigator.push<InventarioItem>(
-      context,
+    final navigator = Navigator.of(context);
+    final resultado = await navigator.push<InventarioItem>(
       MaterialPageRoute(
         builder: (context) => InventarioUpdateScreen(produto: produto),
       ),
     );
     
+    if (!mounted) return;
     if (resultado != null) {
       setState(() {
         _itensEntrada[index] = resultado;
@@ -193,6 +207,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
 
     try {
       await ApiService.instance.enviarEntrada(_itensEntrada);
+      if (!mounted) return;
       _showMessage('Entrada enviada com sucesso!');
       
       // Limpa a lista após envio
@@ -204,13 +219,18 @@ class _EntradaScreenState extends State<EntradaScreen> {
       // Limpa os itens salvos no armazenamento local
       await StorageService.clearEntradaItens();
     } catch (e) {
-      _showMessage('Erro ao enviar entrada: $e');
+      if (mounted) {
+        _showMessage('Erro ao enviar entrada: $e');
+      }
     }
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+    if (!mounted) return;
+    FeedbackService.showSnack(
+      context,
+      message,
+      type: FeedbackService.classifyMessage(message),
     );
   }
 

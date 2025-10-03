@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'logger_service.dart';
 import '../models/etiqueta_coletor.dart';
 import '../models/inventario_item.dart';
 
@@ -30,24 +30,24 @@ class ApiService {
       final licencaTeste = licenca ?? '0000';
       final url = Uri.parse('$_baseUrl/licenca/$licencaTeste');
       
-      debugPrint('Testando conectividade com: $url');
+      LoggerService.d('Testando conectividade com: $url');
       
       final response = await http.get(url).timeout(
         const Duration(seconds: 10),
       );
       
-      debugPrint('Resposta recebida - Status: ${response.statusCode}, Body: ${response.body}');
+      LoggerService.d('Resposta recebida - Status: ${response.statusCode}, Body: ${response.body}');
       
       // Se o servidor responder (mesmo que seja erro 404 ou outro), significa que está conectado
       return response.statusCode < 500;
     } catch (e) {
-      debugPrint('Erro de conectividade detalhado: $e');
-      debugPrint('Tipo do erro: ${e.runtimeType}');
+      LoggerService.e('Erro de conectividade detalhado: $e');
+      LoggerService.d('Tipo do erro: ${e.runtimeType}');
       
       // Verifica se é um erro de CORS
       if (e.toString().contains('Failed to fetch')) {
-        debugPrint('POSSÍVEL ERRO DE CORS: O navegador está bloqueando a requisição');
-        debugPrint('Verifique se o servidor da API tem CORS configurado para: ${Uri.base.origin}');
+        LoggerService.w('POSSÍVEL ERRO DE CORS: O navegador está bloqueando a requisição');
+        LoggerService.w('Verifique se o servidor da API tem CORS configurado para: ${Uri.base.origin}');
       }
       
       return false;
@@ -63,32 +63,32 @@ class ApiService {
     try {
       final url = Uri.parse('$_baseUrl/licenca/$licenca');
       
-      debugPrint('Validando licença com: $url');
+      LoggerService.d('Validando licença com: $url');
       
       final response = await http.get(url).timeout(
         const Duration(seconds: 15),
       );
 
-      debugPrint('Validação - Status: ${response.statusCode}, Body: ${response.body}');
+      LoggerService.d('Validação - Status: ${response.statusCode}, Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final responseBody = response.body.toLowerCase().trim();
         final isValid = responseBody == 'ok';
-        debugPrint('Licença ${isValid ? 'VÁLIDA' : 'INVÁLIDA'} - Resposta: "$responseBody"');
+        LoggerService.i('Licença ${isValid ? 'VÁLIDA' : 'INVÁLIDA'} - Resposta: "$responseBody"');
         return isValid;
       } else if (response.statusCode == 404) {
-        debugPrint('Licença não encontrada (404)');
+        LoggerService.i('Licença não encontrada (404)');
         return false; // Licença não encontrada
       } else {
-        debugPrint('Erro do servidor: ${response.statusCode} - ${response.body}');
+        LoggerService.e('Erro do servidor: ${response.statusCode} - ${response.body}');
         throw Exception('Erro do servidor: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Erro detalhado na validação: $e');
-      debugPrint('Tipo do erro: ${e.runtimeType}');
+      LoggerService.e('Erro detalhado na validação: $e');
+      LoggerService.d('Tipo do erro: ${e.runtimeType}');
       
       if (e.toString().contains('Failed to fetch')) {
-        debugPrint('ERRO DE CORS: Configure o servidor para aceitar requisições de: ${Uri.base.origin}');
+        LoggerService.w('ERRO DE CORS: Configure o servidor para aceitar requisições de: ${Uri.base.origin}');
       }
       
       throw Exception('Erro ao validar licença: $e');
@@ -100,7 +100,7 @@ class ApiService {
     try {
       return await validarLicenca(licenca);
     } catch (e) {
-      debugPrint('Erro na validação: $e');
+      LoggerService.e('Erro na validação: $e');
       return false;
     }
   }
@@ -117,59 +117,59 @@ class ApiService {
       // Primeiro tenta busca direta por código de barras (mais eficiente)
       final urlDireta = Uri.parse('$_baseUrl/produtos/$codigoBarras');
       
-      debugPrint('Tentando busca direta com: $urlDireta');
-      debugPrint('Código de barras procurado: "$codigoBarras"');
+      LoggerService.d('Tentando busca direta com: $urlDireta');
+      LoggerService.d('Código de barras procurado: "$codigoBarras"');
       
       final responseDireta = await http.get(urlDireta).timeout(
         const Duration(seconds: 10),
       );
 
-      debugPrint('Busca direta - Status: ${responseDireta.statusCode}');
+      LoggerService.d('Busca direta - Status: ${responseDireta.statusCode}');
 
       if (responseDireta.statusCode == 200) {
-        debugPrint('Produto encontrado via busca direta!');
+        LoggerService.d('Produto encontrado via busca direta!');
         final data = jsonDecode(responseDireta.body);
         if (data is Map<String, dynamic>) {
-          debugPrint('Produto encontrado: ${data['produto']}');
+          LoggerService.d('Produto encontrado: ${data['produto']}');
           return data;
         } else if (data is List && data.isNotEmpty) {
-          debugPrint('Lista retornada, pegando primeiro item: ${data[0]['produto']}');
+          LoggerService.d('Lista retornada, pegando primeiro item: ${data[0]['produto']}');
           return data[0] as Map<String, dynamic>;
         }
       } else if (responseDireta.statusCode == 404) {
-        debugPrint('Produto não encontrado via busca direta, tentando busca geral...');
+        LoggerService.d('Produto não encontrado via busca direta, tentando busca geral...');
       } else {
-        debugPrint('Erro na busca direta: ${responseDireta.statusCode}, tentando busca geral...');
+        LoggerService.e('Erro na busca direta: ${responseDireta.statusCode}, tentando busca geral...');
       }
 
       // Se busca direta falhou, usa busca geral (fallback)
-      debugPrint('Iniciando busca geral como fallback...');
+      LoggerService.d('Iniciando busca geral como fallback...');
       final url = Uri.parse('$_baseUrl/produtos');
       
-      debugPrint('Buscando todos os produtos com: $url');
+      LoggerService.d('Buscando todos os produtos com: $url');
       
       final response = await http.get(url).timeout(
         const Duration(seconds: 30),
       );
 
-      debugPrint('Busca geral - Status: ${response.statusCode}');
+      LoggerService.d('Busca geral - Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        debugPrint('Tamanho da resposta: ${response.body.length} caracteres');
+        LoggerService.d('Tamanho da resposta: ${response.body.length} caracteres');
         
         try {
-          debugPrint('Iniciando decodificação JSON...');
+          LoggerService.d('Iniciando decodificação JSON...');
           final data = jsonDecode(response.body);
-          debugPrint('JSON decodificado com sucesso. Tipo: ${data.runtimeType}');
+          LoggerService.d('JSON decodificado com sucesso. Tipo: ${data.runtimeType}');
           
           if (data is List) {
-            debugPrint('Total de produtos recebidos: ${data.length}');
+            LoggerService.d('Total de produtos recebidos: ${data.length}');
             
             // Busca otimizada - para na primeira ocorrência
             Map<String, dynamic>? produto;
             int itemsProcessados = 0;
             
-            debugPrint('Iniciando busca otimizada...');
+            LoggerService.d('Iniciando busca otimizada...');
             for (var item in data) {
               itemsProcessados++;
               
@@ -187,8 +187,8 @@ class ApiService {
                 
                 if (codBarrasStr == codigoBarrasStr) {
                   produto = item;
-                  debugPrint('PRODUTO ENCONTRADO no item $itemsProcessados!');
-                  debugPrint('Produto: ${produto['produto']}');
+                  LoggerService.d('PRODUTO ENCONTRADO no item $itemsProcessados!');
+                  LoggerService.d('Produto: ${produto['produto']}');
                   break;
                 }
               } catch (e) {
@@ -198,27 +198,27 @@ class ApiService {
               
               // Log de progresso a cada 1000 itens para acompanhar a busca
               if (itemsProcessados % 1000 == 0) {
-                debugPrint('Processados $itemsProcessados itens...');
+                LoggerService.d('Processados $itemsProcessados itens...');
               }
             }
             
-            debugPrint('Busca concluída. Items processados: $itemsProcessados');
+            LoggerService.d('Busca concluída. Items processados: $itemsProcessados');
             
             if (produto != null) {
               return produto;
             } else {
-              debugPrint('Produto com código "$codigoBarras" não encontrado');
+              LoggerService.i('Produto com código "$codigoBarras" não encontrado');
               return null;
             }
           } else if (data is Map<String, dynamic>) {
-            debugPrint('Resposta é um Map, retornando diretamente');
+            LoggerService.d('Resposta é um Map, retornando diretamente');
             return data;
           } else {
-            debugPrint('Resposta da API não é um Map nem List: ${data.runtimeType}');
+            LoggerService.w('Resposta da API não é um Map nem List: ${data.runtimeType}');
             throw Exception('Formato de resposta inválido');
           }
         } catch (e) {
-          debugPrint('Erro na decodificação JSON: $e');
+          LoggerService.e('Erro na decodificação JSON: $e');
           if (e is FormatException) {
             throw Exception('Erro de formato na resposta da API');
           } else {
@@ -226,14 +226,14 @@ class ApiService {
           }
         }
       } else if (response.statusCode == 404) {
-        debugPrint('Produto não encontrado (404)');
+        LoggerService.i('Produto não encontrado (404)');
         return null;
       } else {
-        debugPrint('Erro do servidor: ${response.statusCode} - ${response.body}');
+        LoggerService.e('Erro do servidor: ${response.statusCode} - ${response.body}');
         throw Exception('Erro do servidor: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Erro detalhado na busca do produto: $e');
+      LoggerService.e('Erro detalhado na busca do produto: $e');
       
       // Tratamento específico para diferentes tipos de erro
       if (e.toString().contains('TimeoutException')) {
@@ -255,13 +255,13 @@ class ApiService {
     try {
       final url = Uri.parse('$_baseUrl/etiquetas');
       
-      debugPrint('Buscando tipos de etiquetas com: $url');
+      LoggerService.d('Buscando tipos de etiquetas com: $url');
       
       final response = await http.get(url).timeout(
         const Duration(seconds: 15),
       );
 
-      debugPrint('Busca etiquetas - Status: ${response.statusCode}, Body: ${response.body}');
+      LoggerService.d('Busca etiquetas - Status: ${response.statusCode}, Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -271,11 +271,11 @@ class ApiService {
           return [data as Map<String, dynamic>];
         }
       } else {
-        debugPrint('Erro do servidor: ${response.statusCode} - ${response.body}');
+        LoggerService.e('Erro do servidor: ${response.statusCode} - ${response.body}');
         throw Exception('Erro do servidor: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Erro detalhado na busca de etiquetas: $e');
+      LoggerService.e('Erro detalhado na busca de etiquetas: $e');
       throw Exception('Erro ao buscar tipos de etiquetas: $e');
     }
   }
@@ -355,31 +355,31 @@ class ApiService {
     try {
       final url = Uri.parse('$_baseUrl/fv/produtos');
       
-      debugPrint('Buscando produto FV com: $url');
-      debugPrint('Código de barras procurado: "$codigoBarras"');
+      LoggerService.d('Buscando produto FV com: $url');
+      LoggerService.d('Código de barras procurado: "$codigoBarras"');
       
       final response = await http.get(url).timeout(
         const Duration(seconds: 30),
       );
 
-      debugPrint('Busca FV - Status: ${response.statusCode}');
+      LoggerService.d('Busca FV - Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        debugPrint('Tamanho da resposta: ${response.body.length} caracteres');
+        LoggerService.d('Tamanho da resposta: ${response.body.length} caracteres');
         
         try {
-          debugPrint('Iniciando decodificação JSON...');
+          LoggerService.d('Iniciando decodificação JSON...');
           final data = jsonDecode(response.body);
-          debugPrint('JSON decodificado com sucesso. Tipo: ${data.runtimeType}');
+          LoggerService.d('JSON decodificado com sucesso. Tipo: ${data.runtimeType}');
           
           if (data is List) {
-            debugPrint('Total de produtos recebidos: ${data.length}');
+            LoggerService.d('Total de produtos recebidos: ${data.length}');
             
             // Busca otimizada - para na primeira ocorrência
             Map<String, dynamic>? produto;
             int itemsProcessados = 0;
             
-            debugPrint('Iniciando busca otimizada...');
+            LoggerService.d('Iniciando busca otimizada...');
             for (var item in data) {
               itemsProcessados++;
               
@@ -397,8 +397,8 @@ class ApiService {
                 
                 if (codBarrasStr == codigoBarrasStr) {
                   produto = item;
-                  debugPrint('PRODUTO ENCONTRADO no item $itemsProcessados!');
-                  debugPrint('Produto: ${produto['produto']}');
+                  LoggerService.d('PRODUTO ENCONTRADO no item $itemsProcessados!');
+                  LoggerService.d('Produto: ${produto['produto']}');
                   break;
                 }
               } catch (e) {
@@ -408,35 +408,35 @@ class ApiService {
               
               // Log de progresso a cada 1000 itens para acompanhar a busca
               if (itemsProcessados % 1000 == 0) {
-                debugPrint('Processados $itemsProcessados itens...');
+                LoggerService.d('Processados $itemsProcessados itens...');
               }
             }
             
             if (produto != null) {
-              debugPrint('Produto encontrado com sucesso!');
+              LoggerService.i('Produto encontrado com sucesso!');
               return produto;
             } else {
-              debugPrint('Produto não encontrado na lista de ${data.length} itens');
+              LoggerService.i('Produto não encontrado na lista de ${data.length} itens');
               return null;
             }
           } else if (data is Map<String, dynamic>) {
-            debugPrint('Resposta única recebida');
+            LoggerService.d('Resposta única recebida');
             return data;
           } else {
-            debugPrint('Formato de resposta inesperado: ${data.runtimeType}');
+            LoggerService.w('Formato de resposta inesperado: ${data.runtimeType}');
             return null;
           }
         } catch (e) {
-          debugPrint('Erro ao decodificar JSON: $e');
+          LoggerService.e('Erro ao decodificar JSON: $e');
           throw Exception('Erro ao processar resposta da API: $e');
         }
       } else {
-        debugPrint('Erro HTTP: ${response.statusCode}');
-        debugPrint('Corpo da resposta: ${response.body}');
+        LoggerService.e('Erro HTTP: ${response.statusCode}');
+        LoggerService.e('Corpo da resposta: ${response.body}');
         throw Exception('Erro HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      debugPrint('Erro na busca do produto FV: $e');
+      LoggerService.e('Erro na busca do produto FV: $e');
       throw Exception('Erro ao buscar produto: $e');
     }
   }
@@ -447,7 +447,7 @@ class ApiService {
     }
 
     try {
-      debugPrint('Enviando inventário com ${itens.length} itens...');
+      LoggerService.d('Enviando inventário com ${itens.length} itens...');
       
       final inventarioRequest = InventarioRequest(
         coleta: 'INVENTARIO',
@@ -456,10 +456,10 @@ class ApiService {
       );
 
       final url = Uri.parse('$_baseUrl/coletor');
-      debugPrint('URL do inventário: $url');
+      LoggerService.d('URL do inventário: $url');
 
       final body = jsonEncode(inventarioRequest.toJson());
-      debugPrint('Corpo da requisição: $body');
+      LoggerService.d('Corpo da requisição: $body');
 
       final response = await http.post(
         url,
@@ -469,17 +469,17 @@ class ApiService {
         body: body,
       );
 
-      debugPrint('Status da resposta: ${response.statusCode}');
-      debugPrint('Corpo da resposta: ${response.body}');
+      LoggerService.d('Status da resposta: ${response.statusCode}');
+      LoggerService.d('Corpo da resposta: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        debugPrint('Inventário enviado com sucesso!');
+        LoggerService.i('Inventário enviado com sucesso!');
       } else {
-        debugPrint('Erro HTTP: ${response.statusCode}');
+        LoggerService.e('Erro HTTP: ${response.statusCode}');
         throw Exception('Erro HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      debugPrint('Erro ao enviar inventário: $e');
+      LoggerService.e('Erro ao enviar inventário: $e');
       throw Exception('Erro ao enviar inventário: $e');
     }
   }
@@ -490,7 +490,7 @@ class ApiService {
     }
 
     try {
-      debugPrint('Enviando entrada com ${itens.length} itens...');
+      LoggerService.d('Enviando entrada com ${itens.length} itens...');
       
       final entradaRequest = InventarioRequest(
         coleta: 'ENTRADA',
@@ -499,10 +499,10 @@ class ApiService {
       );
 
       final url = Uri.parse('$_baseUrl/coletor');
-      debugPrint('URL da entrada: $url');
+      LoggerService.d('URL da entrada: $url');
 
       final body = jsonEncode(entradaRequest.toJson());
-      debugPrint('Corpo da requisição: $body');
+      LoggerService.d('Corpo da requisição: $body');
 
       final response = await http.post(
         url,
@@ -512,17 +512,17 @@ class ApiService {
         body: body,
       );
 
-      debugPrint('Status da resposta: ${response.statusCode}');
-      debugPrint('Corpo da resposta: ${response.body}');
+      LoggerService.d('Status da resposta: ${response.statusCode}');
+      LoggerService.d('Corpo da resposta: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        debugPrint('Entrada enviada com sucesso!');
+        LoggerService.i('Entrada enviada com sucesso!');
       } else {
-        debugPrint('Erro HTTP: ${response.statusCode}');
+        LoggerService.e('Erro HTTP: ${response.statusCode}');
         throw Exception('Erro HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      debugPrint('Erro ao enviar entrada: $e');
+      LoggerService.e('Erro ao enviar entrada: $e');
       throw Exception('Erro ao enviar entrada: $e');
     }
   }

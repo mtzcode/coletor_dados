@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'logger_service.dart';
 import '../models/app_config.dart';
 import '../models/produto.dart';
 import '../models/inventario_item.dart';
@@ -18,9 +18,9 @@ class StorageService {
       final configJson = jsonEncode(config.toMap());
       return await prefs.setString(_configKey, configJson);
     } catch (e) {
-      debugPrint('Erro ao salvar configuração: $e');
+      LoggerService.e('Erro ao salvar configuração: $e');
       return false;
-    }
+    } 
   }
 
   /// Carrega a configuração do armazenamento local
@@ -34,7 +34,7 @@ class StorageService {
       final configMap = jsonDecode(configJson) as Map<String, dynamic>;
       return AppConfig.fromMap(configMap);
     } catch (e) {
-      debugPrint('Erro ao carregar configuração: $e');
+      LoggerService.e('Erro ao carregar configuração: $e');
       return null;
     }
   }
@@ -45,7 +45,7 @@ class StorageService {
       final prefs = await SharedPreferences.getInstance();
       return await prefs.remove(_configKey);
     } catch (e) {
-      debugPrint('Erro ao limpar configuração: $e');
+      LoggerService.e('Erro ao limpar configuração: $e');
       return false;
     }
   }
@@ -56,7 +56,7 @@ class StorageService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.containsKey(_configKey);
     } catch (e) {
-      debugPrint('Erro ao verificar configuração: $e');
+      LoggerService.e('Erro ao verificar configuração: $e');
       return false;
     }
   }
@@ -68,7 +68,7 @@ class StorageService {
       final etiquetasJson = jsonEncode(etiquetas.map((e) => e.toJson()).toList());
       return await prefs.setString(_etiquetasKey, etiquetasJson);
     } catch (e) {
-      debugPrint('Erro ao salvar etiquetas: $e');
+      LoggerService.e('Erro ao salvar etiquetas: $e');
       return false;
     }
   }
@@ -97,7 +97,7 @@ class StorageService {
         );
       }).toList();
     } catch (e) {
-      debugPrint('Erro ao carregar etiquetas: $e');
+      LoggerService.e('Erro ao carregar etiquetas: $e');
       return [];
     }
   }
@@ -108,7 +108,7 @@ class StorageService {
       final prefs = await SharedPreferences.getInstance();
       return await prefs.remove(_etiquetasKey);
     } catch (e) {
-      debugPrint('Erro ao limpar etiquetas: $e');
+      LoggerService.e('Erro ao limpar etiquetas: $e');
       return false;
     }
   }
@@ -119,7 +119,7 @@ class StorageService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.containsKey(_etiquetasKey);
     } catch (e) {
-      debugPrint('Erro ao verificar etiquetas: $e');
+      LoggerService.e('Erro ao verificar etiquetas: $e');
       return false;
     }
   }
@@ -140,7 +140,7 @@ class StorageService {
       }).toList());
       return await prefs.setString(_inventarioKey, itensJson);
     } catch (e) {
-      debugPrint('Erro ao salvar itens de inventário: $e');
+      LoggerService.e('Erro ao salvar itens de inventário: $e');
       return false;
     }
   }
@@ -168,7 +168,7 @@ class StorageService {
         );
       }).toList();
     } catch (e) {
-      debugPrint('Erro ao carregar itens de inventário: $e');
+      LoggerService.e('Erro ao carregar itens de inventário: $e');
       return [];
     }
   }
@@ -179,7 +179,7 @@ class StorageService {
       final prefs = await SharedPreferences.getInstance();
       return await prefs.remove(_inventarioKey);
     } catch (e) {
-      debugPrint('Erro ao limpar itens de inventário: $e');
+      LoggerService.e('Erro ao limpar itens de inventário: $e');
       return false;
     }
   }
@@ -190,7 +190,7 @@ class StorageService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.containsKey(_inventarioKey);
     } catch (e) {
-      debugPrint('Erro ao verificar itens de inventário: $e');
+      LoggerService.e('Erro ao verificar itens de inventário: $e');
       return false;
     }
   }
@@ -211,7 +211,7 @@ class StorageService {
       }).toList());
       return await prefs.setString(_entradaKey, itensJson);
     } catch (e) {
-      debugPrint('Erro ao salvar itens de entrada: $e');
+      LoggerService.e('Erro ao salvar itens de entrada: $e');
       return false;
     }
   }
@@ -239,7 +239,7 @@ class StorageService {
         );
       }).toList();
     } catch (e) {
-      debugPrint('Erro ao carregar itens de entrada: $e');
+      LoggerService.e('Erro ao carregar itens de entrada: $e');
       return [];
     }
   }
@@ -250,7 +250,7 @@ class StorageService {
       final prefs = await SharedPreferences.getInstance();
       return await prefs.remove(_entradaKey);
     } catch (e) {
-      debugPrint('Erro ao limpar itens de entrada: $e');
+      LoggerService.e('Erro ao limpar itens de entrada: $e');
       return false;
     }
   }
@@ -261,7 +261,7 @@ class StorageService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.containsKey(_entradaKey);
     } catch (e) {
-      debugPrint('Erro ao verificar itens de entrada: $e');
+      LoggerService.e('Erro ao verificar itens de entrada: $e');
       return false;
     }
   }
