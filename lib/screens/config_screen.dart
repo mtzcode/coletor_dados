@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/config_provider.dart';
+import '../services/feedback_service.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
 
@@ -60,51 +61,60 @@ class _ConfigScreenState extends State<ConfigScreen> {
       );
 
       if (!saveSuccess) {
-        setState(() {
-          _validationMessage = 'Erro ao salvar configuração temporária';
-        });
+        if (mounted) {
+          setState(() {
+            _validationMessage = 'Erro ao salvar configuração temporária';
+          });
+        }
         return;
       }
 
       // Testa conectividade
       final isConnected = await configProvider.testarConectividade();
       if (!isConnected) {
-        setState(() {
-          _validationMessage = 'Não foi possível conectar com o servidor. Verifique o endereço e porta.';
-          _isConnected = false;
-        });
+        if (mounted) {
+          setState(() {
+            _validationMessage = 'Não foi possível conectar com o servidor. Verifique o endereço e porta.';
+            _isConnected = false;
+          });
+        }
         return;
       }
 
       // Valida licença
       final isValid = await configProvider.validarLicenca();
       
-      setState(() {
-        _isConnected = isValid;
-        _validationMessage = isValid 
-          ? 'Conexão estabelecida com sucesso! Licença válida ✓' 
-          : 'Conectado, mas licença inválida ✗';
-      });
+      if (mounted) {
+        setState(() {
+          _isConnected = isValid;
+          _validationMessage = isValid 
+            ? 'Conexão estabelecida com sucesso! Licença válida ✓' 
+            : 'Conectado, mas licença inválida ✗';
+        });
+      }
 
       if (isValid) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Conexão testada com sucesso!'),
-              backgroundColor: Colors.green,
-            ),
+          FeedbackService.showSnack(
+            context,
+            'Conexão testada com sucesso!',
+            type: FeedbackService.classifyMessage('Conexão testada com sucesso!'),
           );
         }
       }
     } catch (e) {
-      setState(() {
-        _validationMessage = 'Erro na sincronização: $e';
-        _isConnected = false;
-      });
+      if (mounted) {
+        setState(() {
+          _validationMessage = 'Erro na sincronização: $e';
+          _isConnected = false;
+        });
+      }
     } finally {
-      setState(() {
-        _isSyncing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSyncing = false;
+        });
+      }
     }
   }
 
@@ -112,6 +122,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
     if (!_formKey.currentState!.validate() || !_isConnected) return;
 
     final configProvider = Provider.of<ConfigProvider>(context, listen: false);
+    final navigator = Navigator.of(context);
     
     final success = await configProvider.saveConfig(
       endereco: _enderecoController.text.trim(),
@@ -121,22 +132,21 @@ class _ConfigScreenState extends State<ConfigScreen> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Configuração salva com sucesso!'),
-          backgroundColor: Colors.green,
-        ),
+      FeedbackService.showSnack(
+        context,
+        'Configuração salva com sucesso!',
+        type: FeedbackService.classifyMessage('Configuração salva com sucesso!'),
       );
       
       // Navega baseado na origem
       if (widget.fromScreen == 'home') {
         // Se veio da tela principal, volta para ela
-        Navigator.of(context).pushReplacement(
+        navigator.pushReplacement(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       } else {
         // Se veio da tela de login ou splash, vai para login
-        Navigator.of(context).pushReplacement(
+        navigator.pushReplacement(
           MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
       }

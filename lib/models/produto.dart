@@ -42,7 +42,9 @@ class Produto {
     }
 
     return Produto(
-      codBarras: parseString(json['cod_barras']),
+      codBarras: parseString(json['cod_barras'])
+          .replaceAll(RegExp(r'[\s\r\n\t]'), '')
+          .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), ''),
       codProduto: parseString(json['cod_produto']),
       produto: parseString(json['produto']),
       unidade: parseString(json['unidade']),
@@ -57,7 +59,9 @@ class Produto {
 
   Map<String, dynamic> toJson() {
     return {
-      'cod_barras': codBarras,
+      'cod_barras': codBarras
+          .replaceAll(RegExp(r'[\s\r\n\t]'), '')
+          .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), ''),
       'cod_produto': codProduto,
       'produto': produto,
       'unidade': unidade,

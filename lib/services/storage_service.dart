@@ -1,21 +1,47 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'logger_service.dart';
 import '../models/app_config.dart';
 import '../models/produto.dart';
 import '../models/inventario_item.dart';
 
 class StorageService {
+  static String _sanitizeBarcode(String input) {
+    var s = input.trim();
+    s = s.replaceAll(RegExp(r'[\s\r\n\t]+'), '');
+    s = s.replaceAll(RegExp(r'[\u0000-\u001F]'), '');
+    return s;
+  }
   static const String _configKey = 'app_config';
   static const String _etiquetasKey = 'etiquetas_pendentes';
   static const String _inventarioKey = 'inventario_itens';
   static const String _entradaKey = 'entrada_itens';
 
+  // Secure storage keys and instance
+  static const String _secureLicenseKey = 'secure_license';
+  static const String _fallbackLicenseKey = 'license_fallback';
+  static final FlutterSecureStorage _secure = FlutterSecureStorage();
+
   /// Salva a configuração no armazenamento local
   static Future<bool> saveConfig(AppConfig config) async {
     try {
+      // salva licença em secure storage
+      try {
+        await _secure.write(key: _secureLicenseKey, value: config.licenca);
+      } catch (e) {
+        LoggerService.w('Falha ao salvar licença segura, aplicando fallback: $e');
+        final prefsFallback = await SharedPreferences.getInstance();
+        await prefsFallback.setString(_fallbackLicenseKey, base64Encode(utf8.encode(config.licenca)));
+      }
+
       final prefs = await SharedPreferences.getInstance();
-      final configJson = jsonEncode(config.toMap());
+      // persiste sem a licença (dados não sensíveis)
+      final configJson = jsonEncode({
+        'endereco': config.endereco,
+        'porta': config.porta,
+        'isConfigured': config.isConfigured,
+      });
       return await prefs.setString(_configKey, configJson);
     } catch (e) {
       LoggerService.e('Erro ao salvar configuração: $e');
@@ -32,7 +58,33 @@ class StorageService {
       if (configJson == null) return null;
       
       final configMap = jsonDecode(configJson) as Map<String, dynamic>;
-      return AppConfig.fromMap(configMap);
+      var cfg = AppConfig.fromMap(configMap);
+      try {
+        final lic = await _secure.read(key: _secureLicenseKey);
+        if (lic != null && lic.isNotEmpty) {
+          cfg = cfg.copyWith(licenca: lic);
+        } else {
+          final b64 = prefs.getString(_fallbackLicenseKey);
+          if (b64 != null) {
+            try {
+              cfg = cfg.copyWith(licenca: utf8.decode(base64Decode(b64)));
+            } catch (_) {
+              cfg = cfg.copyWith(licenca: b64);
+            }
+          }
+        }
+      } catch (e) {
+        LoggerService.w('Falha ao carregar licença segura, usando fallback: $e');
+        final b64 = prefs.getString(_fallbackLicenseKey);
+        if (b64 != null) {
+          try {
+            cfg = cfg.copyWith(licenca: utf8.decode(base64Decode(b64)));
+          } catch (_) {
+            cfg = cfg.copyWith(licenca: b64);
+          }
+        }
+      }
+      return cfg;
     } catch (e) {
       LoggerService.e('Erro ao carregar configuração: $e');
       return null;
@@ -43,6 +95,12 @@ class StorageService {
   static Future<bool> clearConfig() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      try {
+        await _secure.delete(key: _secureLicenseKey);
+      } catch (e) {
+        LoggerService.w('Falha ao limpar licença no secure storage: $e');
+      }
+      await prefs.remove(_fallbackLicenseKey);
       return await prefs.remove(_configKey);
     } catch (e) {
       LoggerService.e('Erro ao limpar configuração: $e');
@@ -131,7 +189,7 @@ class StorageService {
       final itensJson = jsonEncode(itens.map((item) => {
         'item': item.item,
         'codigo': item.codigo,
-        'barras': item.barras,
+        'barras': _sanitizeBarcode(item.barras),
         'produto': item.produto,
         'unidade': item.unidade,
         'estoqueAtual': item.estoqueAtual,
@@ -159,7 +217,7 @@ class StorageService {
         return InventarioItem(
           item: data['item'] ?? 0,
           codigo: data['codigo'] ?? 0,
-          barras: data['barras'] ?? '',
+          barras: _sanitizeBarcode(data['barras'] ?? ''),
           produto: data['produto'] ?? '',
           unidade: data['unidade'] ?? '',
           estoqueAtual: (data['estoqueAtual'] as num?)?.toDouble() ?? 0.0,
@@ -230,7 +288,7 @@ class StorageService {
         return InventarioItem(
           item: data['item'] ?? 0,
           codigo: data['codigo'] ?? 0,
-          barras: data['barras'] ?? '',
+          barras: _sanitizeBarcode(data['barras'] ?? ''),
           produto: data['produto'] ?? '',
           unidade: data['unidade'] ?? '',
           estoqueAtual: (data['estoqueAtual'] as num?)?.toDouble() ?? 0.0,

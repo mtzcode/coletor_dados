@@ -29,39 +29,33 @@ class _ConsultaPrecoScreenState extends State<ConsultaPrecoScreen> {
       if (!mounted) return;
       if (codigo != null && codigo.isNotEmpty) {
         _codigoController.text = codigo;
-        _consultarProduto();
+        await _consultarProduto();
       }
     } catch (e) {
-      _showMessage('Erro ao abrir scanner: $e');
+      if (mounted) {
+        _showMessage('Erro ao abrir scanner: $e');
+      }
     }
   }
 
   Future<void> _consultarProduto() async {
-    if (_codigoController.text.trim().isEmpty) {
-      _showMessage('Digite um código para pesquisar');
+    final codigo = _codigoController.text.trim();
+    if (codigo.isEmpty) {
+      _showMessage('Digite um código para consultar');
       return;
     }
-
     setState(() {
       _isSearching = true;
-      _produtoEncontrado = null;
     });
-
     try {
-      final produtoData = await ApiService.instance.buscarProdutoFV(_codigoController.text.trim());
-      
+      final produtoData = await ApiService.instance.buscarProdutoFV(codigo);
+      if (!mounted) return;
       if (produtoData != null) {
-        if (mounted) {
-          setState(() {
-            _produtoEncontrado = Produto.fromJson(produtoData, 1);
-          });
-          // Limpa o campo após pesquisa bem-sucedida
-          _codigoController.clear();
-        }
+        setState(() {
+          _produtoEncontrado = Produto.fromJson(produtoData, 0);
+        });
       } else {
-        if (mounted) {
-          _showMessage('Produto não encontrado');
-        }
+        _showMessage('Produto não encontrado');
       }
     } catch (e) {
       if (mounted) {

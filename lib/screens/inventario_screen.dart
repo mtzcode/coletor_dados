@@ -72,6 +72,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
   Future<void> _abrirScanner() async {
     try {
       final codigo = await ScannerService.scanBarcode(context);
+      if (!mounted) return;
       if (codigo != null && codigo.isNotEmpty) {
         _codigoController.text = codigo;
         _pesquisarProduto();
@@ -158,6 +159,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
     });
     // Salva automaticamente os itens
     await _salvarItensInventario();
+    if (!mounted) return;
     _showMessage('Item removido do inventário');
   }
 

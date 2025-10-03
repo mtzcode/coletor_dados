@@ -72,6 +72,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
   Future<void> _abrirScanner() async {
     try {
       final codigo = await ScannerService.scanBarcode(context);
+      if (!mounted) return;
       if (codigo != null && codigo.isNotEmpty) {
         _codigoController.text = codigo;
         _pesquisarProduto();
@@ -206,18 +207,15 @@ class _EntradaScreenState extends State<EntradaScreen> {
     }
 
     try {
+      final navigator = Navigator.of(context);
       await ApiService.instance.enviarEntrada(_itensEntrada);
       if (!mounted) return;
       _showMessage('Entrada enviada com sucesso!');
-      
-      // Limpa a lista após envio
       setState(() {
         _itensEntrada.clear();
-        _contadorItens = 1;
       });
-      
-      // Limpa os itens salvos no armazenamento local
       await StorageService.clearEntradaItens();
+      navigator.pop();
     } catch (e) {
       if (mounted) {
         _showMessage('Erro ao enviar entrada: $e');

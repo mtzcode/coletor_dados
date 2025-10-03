@@ -30,7 +30,9 @@ class InventarioItem {
   Map<String, dynamic> toJson() {
     return {
       'codigo': codigo,
-      'barras': barras,
+      'barras': barras
+          .replaceAll(RegExp(r'[\s\r\n\t]'), '')
+          .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), ''),
       'produto': produto,
       'un': unidade,
       'qtd': novoEstoque,
@@ -44,7 +46,10 @@ class InventarioItem {
     return InventarioItem(
       item: itemNumber,
       codigo: json['codigo'] ?? 0,
-      barras: json['barras'] ?? '',
+      barras: (json['barras'] ?? '')
+          .toString()
+          .replaceAll(RegExp(r'[\s\r\n\t]'), '')
+          .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), ''),
       produto: json['produto'] ?? '',
       unidade: json['un'] ?? '',
       estoqueAtual: (json['estoque_atual'] ?? 0.0).toDouble(),

@@ -12,7 +12,11 @@ class ScannerService {
         ),
       );
       LoggerService.d('ScannerService: Scanner retornou: $result');
-      return result;
+      // Sanitiza o código antes de retornar
+      final sanitized = (result ?? '')
+          .replaceAll(RegExp(r'[\s\r\n\t]'), '')
+          .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), '');
+      return result == null ? null : sanitized;
     } catch (e) {
       LoggerService.e('ScannerService: Erro durante escaneamento: $e');
       rethrow;
@@ -83,7 +87,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       return;
     }
 
-    final String code = capture.barcodes.first.rawValue ?? '';
+    final String codeRaw = capture.barcodes.first.rawValue ?? '';
+    final String code = codeRaw
+        .replaceAll(RegExp(r'[\s\r\n\t]'), '')
+        .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), '');
     if (code.isEmpty) {
       LoggerService.d('BarcodeScannerScreen: Código vazio, ignorando detecção.');
       return;

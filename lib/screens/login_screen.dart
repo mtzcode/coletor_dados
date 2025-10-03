@@ -19,18 +19,22 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
+    final navigator = Navigator.of(context);
+
     // Simula um delay de carregamento
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (mounted) {
-      Navigator.of(context).pushReplacement(
+      navigator.pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     }
 
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _goToConfig() {

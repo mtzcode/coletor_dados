@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/config_provider.dart';
 import 'screens/splash_screen.dart';
+import 'services/api_service.dart';
+import 'screens/login_screen.dart';
+
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 void main() {
   runApp(const MyApp());
@@ -12,9 +16,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Registra handler global de não autorizado (401/403) para redirecionar ao Login
+    ApiService.instance.setUnauthorizedHandler(() {
+      final nav = _rootNavigatorKey.currentState;
+      if (nav == null) return;
+      nav.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
+      );
+    });
+
     return ChangeNotifierProvider(
       create: (context) => ConfigProvider(),
       child: MaterialApp(
+        navigatorKey: _rootNavigatorKey,
         title: 'Coletor de Dados',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),

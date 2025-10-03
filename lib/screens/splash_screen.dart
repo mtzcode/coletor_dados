@@ -22,6 +22,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _initializeApp() async {
     final configProvider = Provider.of<ConfigProvider>(context, listen: false);
+    final navigator = Navigator.of(context);
     
     // Inicializa o provider
     await configProvider.init();
@@ -33,11 +34,11 @@ class _SplashScreenState extends State<SplashScreen> {
     
     // Navega para a tela apropriada
     if (configProvider.isConfigured) {
-      Navigator.of(context).pushReplacement(
+      navigator.pushReplacement(
         MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
     } else {
-      Navigator.of(context).pushReplacement(
+      navigator.pushReplacement(
         MaterialPageRoute(builder: (context) => const ConfigScreen(fromScreen: 'splash')),
       );
     }
