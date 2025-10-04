@@ -1,13 +1,11 @@
+import 'package:coletor_dados/providers/config_provider.dart';
+import 'package:coletor_dados/services/feedback_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/config_provider.dart';
-import '../services/feedback_service.dart';
-import 'login_screen.dart';
-import 'home_screen.dart';
 
 class ConfigScreen extends StatefulWidget {
   final String? fromScreen;
-  
+
   const ConfigScreen({super.key, this.fromScreen});
 
   @override
@@ -18,7 +16,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   final _formKey = GlobalKey<FormState>();
   final _enderecoController = TextEditingController();
   final _portaController = TextEditingController();
-  
+
   bool _isSyncing = false;
   bool _isConnected = false;
   String? _validationMessage;
@@ -52,7 +50,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
     });
 
     final configProvider = Provider.of<ConfigProvider>(context, listen: false);
-    
+
     try {
       // Salva a configuração temporariamente para teste
       final saveSuccess = await configProvider.saveConfig(
@@ -74,7 +72,8 @@ class _ConfigScreenState extends State<ConfigScreen> {
       if (!isConnected) {
         if (mounted) {
           setState(() {
-            _validationMessage = 'Não foi possível conectar com o servidor. Verifique o endereço e porta.';
+            _validationMessage =
+                'Não foi possível conectar com o servidor. Verifique o endereço e porta.';
             _isConnected = false;
           });
         }
@@ -83,13 +82,13 @@ class _ConfigScreenState extends State<ConfigScreen> {
 
       // Valida licença
       final isValid = await configProvider.validarLicenca();
-      
+
       if (mounted) {
         setState(() {
           _isConnected = isValid;
-          _validationMessage = isValid 
-            ? 'Conexão estabelecida com sucesso! Licença válida ✓' 
-            : 'Conectado, mas licença inválida ✗';
+          _validationMessage = isValid
+              ? 'Conexão estabelecida com sucesso! Licença válida ✓'
+              : 'Conectado, mas licença inválida ✗';
         });
       }
 
@@ -98,7 +97,9 @@ class _ConfigScreenState extends State<ConfigScreen> {
           FeedbackService.showSnack(
             context,
             'Conexão testada com sucesso!',
-            type: FeedbackService.classifyMessage('Conexão testada com sucesso!'),
+            type: FeedbackService.classifyMessage(
+              'Conexão testada com sucesso!',
+            ),
           );
         }
       }
@@ -123,7 +124,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
 
     final configProvider = Provider.of<ConfigProvider>(context, listen: false);
     final navigator = Navigator.of(context);
-    
+
     final success = await configProvider.saveConfig(
       endereco: _enderecoController.text.trim(),
       porta: _portaController.text.trim(),
@@ -135,20 +136,18 @@ class _ConfigScreenState extends State<ConfigScreen> {
       FeedbackService.showSnack(
         context,
         'Configuração salva com sucesso!',
-        type: FeedbackService.classifyMessage('Configuração salva com sucesso!'),
+        type: FeedbackService.classifyMessage(
+          'Configuração salva com sucesso!',
+        ),
       );
-      
+
       // Navega baseado na origem
       if (widget.fromScreen == 'home') {
         // Se veio da tela principal, volta para ela
-        navigator.pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
+        navigator.pushReplacementNamed('/home');
       } else {
         // Se veio da tela de login ou splash, vai para login
-        navigator.pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
+        navigator.pushReplacementNamed('/login');
       }
     }
   }
@@ -176,11 +175,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
+                          const Row(
                             children: [
                               Icon(Icons.key, color: Colors.blue),
-                              const SizedBox(width: 8),
-                              const Text(
+                              SizedBox(width: 8),
+                              Text(
                                 'Licença (gerada automaticamente)',
                                 style: TextStyle(
                                   fontSize: 16,
@@ -248,7 +247,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                     },
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Indicador de status de conexão
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -268,49 +267,49 @@ class _ConfigScreenState extends State<ConfigScreen> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   if (_validationMessage != null)
                     Container(
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: _validationMessage!.contains('✓') 
-                          ? Colors.green[50] 
-                          : Colors.red[50],
+                        color: _validationMessage!.contains('✓')
+                            ? Colors.green[50]
+                            : Colors.red[50],
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: _validationMessage!.contains('✓') 
-                            ? Colors.green 
-                            : Colors.red,
+                          color: _validationMessage!.contains('✓')
+                              ? Colors.green
+                              : Colors.red,
                         ),
                       ),
                       child: Row(
                         children: [
                           Icon(
-                            _validationMessage!.contains('✓') 
-                              ? Icons.check_circle 
-                              : Icons.error,
-                            color: _validationMessage!.contains('✓') 
-                              ? Colors.green 
-                              : Colors.red,
+                            _validationMessage!.contains('✓')
+                                ? Icons.check_circle
+                                : Icons.error,
+                            color: _validationMessage!.contains('✓')
+                                ? Colors.green
+                                : Colors.red,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               _validationMessage!,
                               style: TextStyle(
-                                color: _validationMessage!.contains('✓') 
-                                  ? Colors.green[800] 
-                                  : Colors.red[800],
+                                color: _validationMessage!.contains('✓')
+                                    ? Colors.green[800]
+                                    : Colors.red[800],
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  
+
                   // Botões
                   Column(
                     children: [
@@ -322,9 +321,9 @@ class _ConfigScreenState extends State<ConfigScreen> {
                               onPressed: () {
                                 if (widget.fromScreen == 'home') {
                                   // Se veio da tela principal, volta para ela
-                                  Navigator.of(context).pushReplacement(
-                                    MaterialPageRoute(builder: (context) => const HomeScreen()),
-                                  );
+                                  Navigator.of(
+                                    context,
+                                  ).pushReplacementNamed('/home');
                                 } else {
                                   // Se veio da tela de login, apenas pop
                                   Navigator.of(context).pop();
@@ -333,7 +332,9 @@ class _ConfigScreenState extends State<ConfigScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.grey,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                               ),
                               child: const Text('Voltar'),
                             ),
@@ -345,7 +346,9 @@ class _ConfigScreenState extends State<ConfigScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blue,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                               ),
                               child: _isSyncing
                                   ? const SizedBox(
@@ -353,7 +356,10 @@ class _ConfigScreenState extends State<ConfigScreen> {
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
                                       ),
                                     )
                                   : const Text('Sincronizar'),
@@ -368,7 +374,9 @@ class _ConfigScreenState extends State<ConfigScreen> {
                         child: ElevatedButton(
                           onPressed: _isConnected ? _saveAndNavigate : null,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _isConnected ? Colors.green : Colors.grey,
+                            backgroundColor: _isConnected
+                                ? Colors.green
+                                : Colors.grey,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),

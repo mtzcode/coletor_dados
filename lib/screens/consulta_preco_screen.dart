@@ -1,9 +1,8 @@
+import 'package:coletor_dados/models/produto.dart';
+import 'package:coletor_dados/services/api_service.dart';
+import 'package:coletor_dados/services/feedback_service.dart';
+import 'package:coletor_dados/services/scanner_service.dart';
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-import '../services/scanner_service.dart';
-import '../models/produto.dart';
-import 'etiqueta_screen.dart';
-import '../services/feedback_service.dart';
 
 class ConsultaPrecoScreen extends StatefulWidget {
   const ConsultaPrecoScreen({super.key});
@@ -72,12 +71,7 @@ class _ConsultaPrecoScreenState extends State<ConsultaPrecoScreen> {
 
   void _enviarParaEtiqueta() {
     if (_produtoEncontrado != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => EtiquetaScreen(produtoParaAdicionar: _produtoEncontrado),
-        ),
-      );
+      Navigator.pushNamed(context, '/etiqueta', arguments: _produtoEncontrado);
     }
   }
 
@@ -89,8 +83,6 @@ class _ConsultaPrecoScreenState extends State<ConsultaPrecoScreen> {
       type: FeedbackService.classifyMessage(message),
     );
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -146,14 +138,18 @@ class _ConsultaPrecoScreenState extends State<ConsultaPrecoScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: _isSearching ? null : _consultarProduto,
-                        icon: _isSearching 
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.search),
-                        label: Text(_isSearching ? 'Consultando...' : 'Consultar'),
+                        icon: _isSearching
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.search),
+                        label: Text(
+                          _isSearching ? 'Consultando...' : 'Consultar',
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
@@ -165,9 +161,9 @@ class _ConsultaPrecoScreenState extends State<ConsultaPrecoScreen> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Resultado da consulta
             if (_produtoEncontrado != null) ...[
               Expanded(
@@ -187,26 +183,50 @@ class _ConsultaPrecoScreenState extends State<ConsultaPrecoScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        
+
                         Expanded(
                           child: SingleChildScrollView(
                             child: Column(
                               children: [
-                                _buildInfoRow('Código do Produto', _produtoEncontrado!.codProduto),
-                                _buildInfoRow('Código de Barras', _produtoEncontrado!.codBarras),
-                                _buildInfoRow('Produto', _produtoEncontrado!.produto),
-                                _buildInfoRow('Unidade', _produtoEncontrado!.unidade),
-                                _buildInfoRow('Valor de Venda', _produtoEncontrado!.precoFormatado),
-                                _buildInfoRow('Qtd. Estoque', _produtoEncontrado!.qtdEstoqueFormatada),
-                                _buildInfoRow('Data Atualização', _produtoEncontrado!.dataAtualizacaoFormatada),
-                                _buildInfoRow('Data/Hora Consulta', _produtoEncontrado!.dataHoraFormatada),
+                                _buildInfoRow(
+                                  'Código do Produto',
+                                  _produtoEncontrado!.codProduto,
+                                ),
+                                _buildInfoRow(
+                                  'Código de Barras',
+                                  _produtoEncontrado!.codBarras,
+                                ),
+                                _buildInfoRow(
+                                  'Produto',
+                                  _produtoEncontrado!.produto,
+                                ),
+                                _buildInfoRow(
+                                  'Unidade',
+                                  _produtoEncontrado!.unidade,
+                                ),
+                                _buildInfoRow(
+                                  'Valor de Venda',
+                                  _produtoEncontrado!.precoFormatado,
+                                ),
+                                _buildInfoRow(
+                                  'Qtd. Estoque',
+                                  _produtoEncontrado!.qtdEstoqueFormatada,
+                                ),
+                                _buildInfoRow(
+                                  'Data Atualização',
+                                  _produtoEncontrado!.dataAtualizacaoFormatada,
+                                ),
+                                _buildInfoRow(
+                                  'Data/Hora Consulta',
+                                  _produtoEncontrado!.dataHoraFormatada,
+                                ),
                               ],
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Botão enviar para etiqueta
                         SizedBox(
                           width: double.infinity,
@@ -232,18 +252,11 @@ class _ConsultaPrecoScreenState extends State<ConsultaPrecoScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.search,
-                        size: 80,
-                        color: Colors.grey,
-                      ),
+                      Icon(Icons.search, size: 80, color: Colors.grey),
                       SizedBox(height: 16),
                       Text(
                         'Digite um código para consultar',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
                       ),
                     ],
                   ),
@@ -273,12 +286,7 @@ class _ConsultaPrecoScreenState extends State<ConsultaPrecoScreen> {
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: Colors.black54,
-              ),
-            ),
+            child: Text(value, style: const TextStyle(color: Colors.black54)),
           ),
         ],
       ),

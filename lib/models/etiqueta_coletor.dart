@@ -2,16 +2,17 @@ class EtiquetaColetor {
   final int? etqIdx;
   final int? etqId;
   final int? loteId;
-  final String? etqCodmat;     // cod_produto da tabela produto
+  final String? etqCodmat; // cod_produto da tabela produto
   final int? etqQtd;
-  final String? etqEan13;      // cod_barras da tabela produto
-  final String? etqDthora;     // data e hora do envio (26/09/2025 20:36:53)
-  final String? etqDesc;       // produto da tabela produto
+  final String? etqEan13; // cod_barras da tabela produto
+  final String? etqDthora; // data e hora do envio (26/09/2025 20:36:53)
+  final String? etqDesc; // produto da tabela produto
   final String? etqPosicao;
   final String? etqVal;
-  final String? etqUn;         // unidade da tabela produto
+  final String? etqUn; // unidade da tabela produto
   final String? etqPreco;
-  final String? layetqText;    // tipo da etiqueta (GONDOLA GRANDE, GONDOLA PEQUENA, etc.)
+  final String?
+  layetqText; // tipo da etiqueta (GONDOLA GRANDE, GONDOLA PEQUENA, etc.)
   final String? gr7Status;
   final String? gr7DataHora;
 
@@ -44,8 +45,9 @@ class EtiquetaColetor {
     String? preco,
   }) {
     final now = DateTime.now();
-    final dataHoraFormatada = "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
-    
+    final dataHoraFormatada =
+        "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+
     return EtiquetaColetor(
       etqCodmat: codProduto,
       etqQtd: quantidade,
@@ -67,7 +69,7 @@ class EtiquetaColetor {
       'LOTE_ID': loteId ?? 0,
       'ETQ_QTD': etqQtd ?? 1,
       'ETQ_POSICAO': etqPosicao ?? 0,
-      
+
       // Campos VARCHAR (strings)
       'ETQ_CODMAT': etqCodmat ?? '',
       'ETQ_EAN13': etqEan13 ?? '',

@@ -1,9 +1,18 @@
+import 'package:coletor_dados/models/produto.dart';
+import 'package:coletor_dados/providers/config_provider.dart';
+import 'package:coletor_dados/screens/config_screen.dart';
+import 'package:coletor_dados/screens/consulta_preco_screen.dart';
+import 'package:coletor_dados/screens/entrada_screen.dart';
+import 'package:coletor_dados/screens/etiqueta_screen.dart';
+import 'package:coletor_dados/screens/home_screen.dart';
+import 'package:coletor_dados/screens/inventario_screen.dart';
+import 'package:coletor_dados/screens/inventario_update_screen.dart';
+import 'package:coletor_dados/screens/login_screen.dart';
+import 'package:coletor_dados/screens/splash_screen.dart';
+import 'package:coletor_dados/services/api_service.dart';
+import 'package:coletor_dados/services/scanner_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'providers/config_provider.dart';
-import 'screens/splash_screen.dart';
-import 'services/api_service.dart';
-import 'screens/login_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -20,10 +29,7 @@ class MyApp extends StatelessWidget {
     ApiService.instance.setUnauthorizedHandler(() {
       final nav = _rootNavigatorKey.currentState;
       if (nav == null) return;
-      nav.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      );
+      nav.pushNamedAndRemoveUntil('/login', (route) => false);
     });
 
     return ChangeNotifierProvider(
@@ -34,10 +40,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
           useMaterial3: true,
-          appBarTheme: const AppBarTheme(
-            centerTitle: true,
-            elevation: 2,
-          ),
+          appBarTheme: const AppBarTheme(centerTitle: true, elevation: 2),
           cardTheme: CardThemeData(
             elevation: 4,
             shape: RoundedRectangleBorder(
@@ -53,13 +56,54 @@ class MyApp extends StatelessWidget {
             ),
           ),
           inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
         ),
         home: const SplashScreen(),
+        onGenerateRoute: (settings) {
+          switch (settings.name) {
+            case '/login':
+              return MaterialPageRoute(builder: (_) => const LoginScreen());
+            case '/home':
+              return MaterialPageRoute(builder: (_) => const HomeScreen());
+            case '/config':
+              final from = (settings.arguments as String?) ?? 'login';
+              return MaterialPageRoute(
+                builder: (_) => ConfigScreen(fromScreen: from),
+              );
+            case '/etiqueta':
+              final produtoArg = settings.arguments as Produto?;
+              return MaterialPageRoute(
+                builder: (_) =>
+                    EtiquetaScreen(produtoParaAdicionar: produtoArg),
+              );
+            case '/consulta':
+              return MaterialPageRoute(
+                builder: (_) => const ConsultaPrecoScreen(),
+              );
+            case '/inventario':
+              return MaterialPageRoute(
+                builder: (_) => const InventarioScreen(),
+              );
+            case '/entrada':
+              return MaterialPageRoute(builder: (_) => const EntradaScreen());
+            case '/scanner':
+              return MaterialPageRoute(
+                builder: (_) => const BarcodeScannerScreen(),
+              );
+            case '/inventario-update':
+              final produto = settings.arguments as Produto;
+              return MaterialPageRoute(
+                builder: (_) => InventarioUpdateScreen(produto: produto),
+              );
+            default:
+              return MaterialPageRoute(builder: (_) => const SplashScreen());
+          }
+        },
         debugShowCheckedModeBanner: false,
       ),
     );

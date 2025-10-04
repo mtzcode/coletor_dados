@@ -1,8 +1,8 @@
+import 'package:coletor_dados/models/app_config.dart';
+import 'package:coletor_dados/services/api_service.dart';
+import 'package:coletor_dados/services/license_service.dart';
+import 'package:coletor_dados/services/storage_service.dart';
 import 'package:flutter/foundation.dart';
-import '../models/app_config.dart';
-import '../services/api_service.dart';
-import '../services/license_service.dart';
-import '../services/storage_service.dart';
 
 class ConfigProvider extends ChangeNotifier {
   AppConfig _config = AppConfig.empty();
@@ -79,9 +79,13 @@ class ConfigProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       // Passa a licença real para o teste de conectividade
-      final isConnected = await ApiService.instance.testarConectividade(_config.licenca);
+      final isConnected = await ApiService.instance.testarConectividade(
+        _config.licenca,
+      );
       if (!isConnected) {
-        _setError('Não foi possível conectar com o servidor. Verifique o endereço e porta.');
+        _setError(
+          'Não foi possível conectar com o servidor. Verifique o endereço e porta.',
+        );
       } else {
         _clearError();
       }
@@ -103,7 +107,9 @@ class ConfigProvider extends ChangeNotifier {
 
     _setLoading(true);
     try {
-      final isValid = await ApiService.instance.validarLicencaSimples(_config.licenca);
+      final isValid = await ApiService.instance.validarLicencaSimples(
+        _config.licenca,
+      );
       if (!isValid) {
         _setError('Licença inválida');
       } else {
@@ -123,14 +129,20 @@ class ConfigProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       // Primeiro testa conectividade com a licença real
-      final isConnected = await ApiService.instance.testarConectividade(_config.licenca);
+      final isConnected = await ApiService.instance.testarConectividade(
+        _config.licenca,
+      );
       if (!isConnected) {
-        _setError('Não foi possível conectar com o servidor. Verifique o endereço e porta.');
+        _setError(
+          'Não foi possível conectar com o servidor. Verifique o endereço e porta.',
+        );
         return false;
       }
 
       // Valida a licença (API retorna apenas OK se válida)
-      final isValid = await ApiService.instance.validarLicencaSimples(_config.licenca);
+      final isValid = await ApiService.instance.validarLicencaSimples(
+        _config.licenca,
+      );
       if (!isValid) {
         _setError('Licença inválida');
         return false;
@@ -146,8 +158,6 @@ class ConfigProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
-
-
 
   /// Limpa a configuração
   Future<void> clearConfig() async {

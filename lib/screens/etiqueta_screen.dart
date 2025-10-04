@@ -1,17 +1,17 @@
+import 'package:coletor_dados/models/etiqueta_coletor.dart';
+import 'package:coletor_dados/models/produto.dart';
+import 'package:coletor_dados/providers/config_provider.dart';
+import 'package:coletor_dados/services/api_service.dart';
+import 'package:coletor_dados/services/feedback_service.dart';
+import 'package:coletor_dados/services/logger_service.dart';
+import 'package:coletor_dados/services/scanner_service.dart';
+import 'package:coletor_dados/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/config_provider.dart';
-import '../services/api_service.dart';
-import '../services/scanner_service.dart';
-import '../services/storage_service.dart';
-import '../services/feedback_service.dart';
-import '../services/logger_service.dart';
-import '../models/produto.dart';
-import '../models/etiqueta_coletor.dart';
 
 class EtiquetaScreen extends StatefulWidget {
   final Produto? produtoParaAdicionar;
-  
+
   const EtiquetaScreen({super.key, this.produtoParaAdicionar});
 
   @override
@@ -20,11 +20,11 @@ class EtiquetaScreen extends StatefulWidget {
 
 class _EtiquetaScreenState extends State<EtiquetaScreen> {
   final _codigoController = TextEditingController();
-  
+
   bool _isSearching = false;
   bool _isPrinting = false;
   bool _isLoadingEtiquetas = false;
-  
+
   // Lista de produtos pesquisados
   final List<Produto> _produtosPesquisados = [];
   List<TipoEtiqueta> _tiposEtiquetas = [];
@@ -45,7 +45,10 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         setState(() {
           // Atualiza o número do item baseado na lista atual
-          final novoProduto = Produto.fromJson(widget.produtoParaAdicionar!.toJson(), _contadorItens);
+          final novoProduto = Produto.fromJson(
+            widget.produtoParaAdicionar!.toJson(),
+            _contadorItens,
+          );
           _produtosPesquisados.add(novoProduto);
           _contadorItens++;
         });
@@ -70,23 +73,32 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
     });
 
     try {
-      final configProvider = Provider.of<ConfigProvider>(context, listen: false);
-      
+      final configProvider = Provider.of<ConfigProvider>(
+        context,
+        listen: false,
+      );
+
       // Configura a API se necessário
-      if (configProvider.config.endereco.isNotEmpty && configProvider.config.porta.isNotEmpty) {
-        final baseUrl = 'http://${configProvider.config.endereco}:${configProvider.config.porta}/api';
+      if (configProvider.config.endereco.isNotEmpty &&
+          configProvider.config.porta.isNotEmpty) {
+        final baseUrl =
+            'http://${configProvider.config.endereco}:${configProvider.config.porta}/api';
         ApiService.instance.configure(baseUrl);
       }
 
       final etiquetas = await ApiService.instance.buscarTiposEtiquetas();
-      
+
       if (mounted) {
         setState(() {
-          _tiposEtiquetas = etiquetas.map((e) => TipoEtiqueta.fromJson(e)).toList();
+          _tiposEtiquetas = etiquetas
+              .map((e) => TipoEtiqueta.fromJson(e))
+              .toList();
           if (_tiposEtiquetas.isNotEmpty) {
             // Procura por "Gondola Grande" como padrão
             _tipoEtiquetaGlobal = _tiposEtiquetas.firstWhere(
-              (tipo) => tipo.nome.toLowerCase().contains('gondola') && tipo.nome.toLowerCase().contains('grande'),
+              (tipo) =>
+                  tipo.nome.toLowerCase().contains('gondola') &&
+                  tipo.nome.toLowerCase().contains('grande'),
               orElse: () => _tiposEtiquetas.first,
             );
           }
@@ -113,7 +125,11 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
           _produtosPesquisados.addAll(etiquetasSalvas);
           // Atualiza o contador para o próximo item
           if (etiquetasSalvas.isNotEmpty) {
-            _contadorItens = etiquetasSalvas.map((e) => e.numeroItem).reduce((a, b) => a > b ? a : b) + 1;
+            _contadorItens =
+                etiquetasSalvas
+                    .map((e) => e.numeroItem)
+                    .reduce((a, b) => a > b ? a : b) +
+                1;
           }
         });
       }
@@ -136,15 +152,19 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
       final codigo = await ScannerService.scanBarcode(context);
       if (!mounted) return;
       LoggerService.d('EtiquetaScreen: Scanner retornou código: $codigo');
-      
+
       if (codigo != null && codigo.isNotEmpty) {
-        LoggerService.d('EtiquetaScreen: Código válido recebido, definindo no controller...');
+        LoggerService.d(
+          'EtiquetaScreen: Código válido recebido, definindo no controller...',
+        );
         _codigoController.text = codigo;
         LoggerService.d('EtiquetaScreen: Iniciando pesquisa do produto...');
         await _pesquisarProduto();
         LoggerService.d('EtiquetaScreen: Pesquisa do produto concluída');
       } else {
-        LoggerService.d('EtiquetaScreen: Código vazio ou nulo recebido do scanner');
+        LoggerService.d(
+          'EtiquetaScreen: Código vazio ou nulo recebido do scanner',
+        );
       }
     } catch (e) {
       LoggerService.e('EtiquetaScreen: Erro no scanner: $e');
@@ -156,56 +176,73 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
 
   Future<void> _pesquisarProduto() async {
     LoggerService.d('EtiquetaScreen: Iniciando _pesquisarProduto...');
-    
+
     if (_codigoController.text.trim().isEmpty) {
       LoggerService.d('EtiquetaScreen: Código vazio, abortando pesquisa');
       _showMessage('Por favor, digite um código de barras');
       return;
     }
 
-    LoggerService.d('EtiquetaScreen: Código para pesquisa: ${_codigoController.text.trim()}');
-    
+    LoggerService.d(
+      'EtiquetaScreen: Código para pesquisa: ${_codigoController.text.trim()}',
+    );
+
     setState(() {
       _isSearching = true;
     });
 
     try {
       LoggerService.d('EtiquetaScreen: Obtendo configuração...');
-      final configProvider = Provider.of<ConfigProvider>(context, listen: false);
-      
+      final configProvider = Provider.of<ConfigProvider>(
+        context,
+        listen: false,
+      );
+
       // Configura a API se necessário
-      if (configProvider.config.endereco.isNotEmpty && configProvider.config.porta.isNotEmpty) {
-        final baseUrl = 'http://${configProvider.config.endereco}:${configProvider.config.porta}/api';
-        LoggerService.d('EtiquetaScreen: Configurando API com baseUrl: $baseUrl');
+      if (configProvider.config.endereco.isNotEmpty &&
+          configProvider.config.porta.isNotEmpty) {
+        final baseUrl =
+            'http://${configProvider.config.endereco}:${configProvider.config.porta}/api';
+        LoggerService.d(
+          'EtiquetaScreen: Configurando API com baseUrl: $baseUrl',
+        );
         ApiService.instance.configure(baseUrl);
       }
 
       // Busca o produto na API
       LoggerService.d('EtiquetaScreen: Iniciando busca na API...');
-      final produtoData = await ApiService.instance.buscarProdutoFV(_codigoController.text.trim());
-      LoggerService.d('EtiquetaScreen: Busca na API concluída. Produto encontrado: ${produtoData != null}');
-      
+      final produtoData = await ApiService.instance.buscarProdutoFV(
+        _codigoController.text.trim(),
+      );
+      LoggerService.d(
+        'EtiquetaScreen: Busca na API concluída. Produto encontrado: ${produtoData != null}',
+      );
+
       if (produtoData != null) {
-        LoggerService.d('EtiquetaScreen: Verificando se widget ainda está montado...');
+        LoggerService.d(
+          'EtiquetaScreen: Verificando se widget ainda está montado...',
+        );
         if (mounted) {
-          LoggerService.d('EtiquetaScreen: Widget montado, processando produto...');
+          LoggerService.d(
+            'EtiquetaScreen: Widget montado, processando produto...',
+          );
           final novoProduto = Produto.fromJson(produtoData, _contadorItens);
-          
+
           // Define o tipo de etiqueta global se disponível
           if (_tipoEtiquetaGlobal != null) {
             novoProduto.tipoEtiqueta = _tipoEtiquetaGlobal!.nome;
           }
-          
+
           LoggerService.d('EtiquetaScreen: Adicionando produto à lista...');
           setState(() {
             _produtosPesquisados.add(novoProduto);
             _contadorItens++;
           });
-          
+
           // Salva automaticamente as etiquetas
           LoggerService.d('EtiquetaScreen: Salvando etiquetas...');
           await _salvarEtiquetas();
-          
+
           // Limpa o campo de código para próxima pesquisa
           LoggerService.d('EtiquetaScreen: Limpando campo de código...');
           _codigoController.clear();
@@ -213,7 +250,9 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
           _showMessage('Produto adicionado à lista!');
           LoggerService.d('EtiquetaScreen: Processo concluído com sucesso!');
         } else {
-          LoggerService.d('EtiquetaScreen: Widget não está mais montado, abortando processamento');
+          LoggerService.d(
+            'EtiquetaScreen: Widget não está mais montado, abortando processamento',
+          );
         }
       } else {
         LoggerService.d('EtiquetaScreen: Produto não encontrado na API');
@@ -229,12 +268,16 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
     } finally {
       LoggerService.d('EtiquetaScreen: Finalizando pesquisa...');
       if (mounted) {
-        LoggerService.d('EtiquetaScreen: Widget montado, definindo _isSearching = false');
+        LoggerService.d(
+          'EtiquetaScreen: Widget montado, definindo _isSearching = false',
+        );
         setState(() {
           _isSearching = false;
         });
       } else {
-        LoggerService.d('EtiquetaScreen: Widget não montado, não atualizando estado');
+        LoggerService.d(
+          'EtiquetaScreen: Widget não montado, não atualizando estado',
+        );
       }
       LoggerService.d('EtiquetaScreen: _pesquisarProduto finalizada');
     }
@@ -256,11 +299,16 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
     });
 
     try {
-      final configProvider = Provider.of<ConfigProvider>(context, listen: false);
-      
+      final configProvider = Provider.of<ConfigProvider>(
+        context,
+        listen: false,
+      );
+
       // Configura a API se necessário
-      if (configProvider.config.endereco.isNotEmpty && configProvider.config.porta.isNotEmpty) {
-        final baseUrl = 'http://${configProvider.config.endereco}:${configProvider.config.porta}/api';
+      if (configProvider.config.endereco.isNotEmpty &&
+          configProvider.config.porta.isNotEmpty) {
+        final baseUrl =
+            'http://${configProvider.config.endereco}:${configProvider.config.porta}/api';
         ApiService.instance.configure(baseUrl);
       }
 
@@ -272,22 +320,31 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
           nomeProduto: produto.produto,
           unidade: produto.unidade,
           tipoEtiqueta: _tipoEtiquetaGlobal!.nome,
-          quantidade: 1,
           preco: produto.valorVenda.toString(),
         );
       }).toList();
 
       // Envia para a API do coletor
-      LoggerService.d('EtiquetaScreen: Enviando ${etiquetas.length} etiqueta(s) para API do coletor...');
-      final sucesso = await ApiService.instance.enviarEtiquetasColetor(etiquetas);
+      LoggerService.d(
+        'EtiquetaScreen: Enviando ${etiquetas.length} etiqueta(s) para API do coletor...',
+      );
+      final sucesso = await ApiService.instance.enviarEtiquetasColetor(
+        etiquetas,
+      );
 
       if (mounted) {
         if (sucesso) {
-          LoggerService.d('EtiquetaScreen: Envio de etiquetas concluído com sucesso');
-          _showMessage('${_produtosPesquisados.length} etiqueta(s) enviada(s) para o servidor!');
+          LoggerService.d(
+            'EtiquetaScreen: Envio de etiquetas concluído com sucesso',
+          );
+          _showMessage(
+            '${_produtosPesquisados.length} etiqueta(s) enviada(s) para o servidor!',
+          );
           _limparLista();
         } else {
-          LoggerService.e('EtiquetaScreen: Falha ao enviar etiquetas para o servidor');
+          LoggerService.e(
+            'EtiquetaScreen: Falha ao enviar etiquetas para o servidor',
+          );
           _showMessage('Erro ao enviar etiquetas para o servidor');
         }
       }
@@ -386,9 +443,9 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
                       });
                     },
                   ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Texto de orientação
                 Container(
                   width: double.infinity,
@@ -403,7 +460,7 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
                     textAlign: TextAlign.center,
                   ),
                 ),
-                
+
                 // Campo de pesquisa
                 Row(
                   children: [
@@ -440,7 +497,10 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 12,
+                        ),
                       ),
                     ),
                   ],
@@ -448,7 +508,7 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
               ],
             ),
           ),
-          
+
           // Lista de produtos
           Expanded(
             child: _produtosPesquisados.isEmpty
@@ -489,7 +549,7 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
                     },
                   ),
           ),
-          
+
           // Botão de envio para servidor
           if (_produtosPesquisados.isNotEmpty)
             Container(
@@ -516,8 +576,8 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
                         )
                       : const Icon(Icons.cloud_upload),
                   label: Text(
-                    _isPrinting 
-                        ? 'Enviando...' 
+                    _isPrinting
+                        ? 'Enviando...'
                         : 'Enviar ${_produtosPesquisados.length} Etiqueta(s) para Servidor',
                   ),
                   style: ElevatedButton.styleFrom(
@@ -546,7 +606,10 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue[100],
                     borderRadius: BorderRadius.circular(12),
@@ -574,10 +637,7 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
                 const SizedBox(width: 8),
                 Text(
                   produto.dataHoraFormatada,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red, size: 20),
@@ -587,27 +647,27 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Segunda linha: Nome do produto
             Text(
               produto.produto,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Terceira linha: Preço + Tipo de etiqueta
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green[100],
                     borderRadius: BorderRadius.circular(8),
@@ -624,13 +684,18 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.orange[100],
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      produto.tipoEtiqueta ?? _tipoEtiquetaGlobal?.nome ?? 'Sem tipo',
+                      produto.tipoEtiqueta ??
+                          _tipoEtiquetaGlobal?.nome ??
+                          'Sem tipo',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,

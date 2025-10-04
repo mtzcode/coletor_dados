@@ -80,10 +80,10 @@ class Produto {
 
   String get dataHoraFormatada {
     return '${dataHoraRequisicao.day.toString().padLeft(2, '0')}/'
-           '${dataHoraRequisicao.month.toString().padLeft(2, '0')}/'
-           '${dataHoraRequisicao.year} '
-           '${dataHoraRequisicao.hour.toString().padLeft(2, '0')}:'
-           '${dataHoraRequisicao.minute.toString().padLeft(2, '0')}';
+        '${dataHoraRequisicao.month.toString().padLeft(2, '0')}/'
+        '${dataHoraRequisicao.year} '
+        '${dataHoraRequisicao.hour.toString().padLeft(2, '0')}:'
+        '${dataHoraRequisicao.minute.toString().padLeft(2, '0')}';
   }
 
   String get numeroItemFormatado {
@@ -97,8 +97,8 @@ class Produto {
     try {
       final DateTime dateTime = DateTime.parse(dataAtualizacao!);
       return '${dateTime.day.toString().padLeft(2, '0')}/'
-             '${dateTime.month.toString().padLeft(2, '0')}/'
-             '${dateTime.year}';
+          '${dateTime.month.toString().padLeft(2, '0')}/'
+          '${dateTime.year}';
     } catch (e) {
       return dataAtualizacao!;
     }
@@ -117,23 +117,19 @@ class TipoEtiqueta {
   final String nome;
   final String descricao;
 
-  TipoEtiqueta({
-    required this.id,
-    required this.nome,
-    required this.descricao,
-  });
+  TipoEtiqueta({required this.id, required this.nome, required this.descricao});
 
   factory TipoEtiqueta.fromJson(Map<String, dynamic> json) {
     return TipoEtiqueta(
-      id: json['codigo']?.toString() ?? '',      // API usa 'codigo'
-      nome: json['etiqueta'] ?? '',              // API usa 'etiqueta'
-      descricao: json['arquivo'] ?? '',          // API usa 'arquivo'
+      id: json['codigo']?.toString() ?? '', // API usa 'codigo'
+      nome: json['etiqueta'] ?? '', // API usa 'etiqueta'
+      descricao: json['arquivo'] ?? '', // API usa 'arquivo'
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'codigo': id,        // Mapeando de volta para o formato da API
+      'codigo': id, // Mapeando de volta para o formato da API
       'etiqueta': nome,
       'arquivo': descricao,
     };

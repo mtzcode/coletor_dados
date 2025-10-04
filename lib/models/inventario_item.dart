@@ -54,7 +54,7 @@ class InventarioItem {
       unidade: json['un'] ?? '',
       estoqueAtual: (json['estoque_atual'] ?? 0.0).toDouble(),
       novoEstoque: (json['qtd'] ?? 0.0).toDouble(),
-      dtCriacao: json['dt_criacao'] != null 
+      dtCriacao: json['dt_criacao'] != null
           ? DateTime.tryParse(json['dt_criacao']) ?? DateTime.now()
           : DateTime.now(),
     );
@@ -140,11 +140,15 @@ class InventarioRequest {
     return InventarioRequest(
       coleta: json['coleta'] ?? 'INVENTARIO',
       imei: json['imei'] ?? 7829,
-      itens: (json['itens'] as List<dynamic>?)
-          ?.asMap()
-          .entries
-          .map((entry) => InventarioItem.fromJson(entry.value, entry.key + 1))
-          .toList() ?? [],
+      itens:
+          (json['itens'] as List<dynamic>?)
+              ?.asMap()
+              .entries
+              .map(
+                (entry) => InventarioItem.fromJson(entry.value, entry.key + 1),
+              )
+              .toList() ??
+          [],
     );
   }
 }

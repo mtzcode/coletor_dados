@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+
+import 'package:coletor_dados/models/etiqueta_coletor.dart';
+import 'package:coletor_dados/models/inventario_item.dart';
+import 'package:coletor_dados/services/logger_service.dart';
 import 'package:http/http.dart' as http;
-import 'logger_service.dart';
-import '../models/etiqueta_coletor.dart';
-import '../models/inventario_item.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -14,6 +15,12 @@ class ApiService {
 
   String? _baseUrl;
   bool get isConfigured => _baseUrl != null;
+
+  // Cliente HTTP injetável para facilitar testes
+  http.Client _client = http.Client();
+  void setClient(http.Client client) {
+    _client = client;
+  }
 
   // Timeouts centralizados
   static const Duration _timeoutShort = Duration(seconds: 8);
@@ -36,7 +43,9 @@ class ApiService {
   };
 
   void _handleUnauthorized() {
-    LoggerService.w('Resposta 401/403 recebida. Disparando redirecionamento para Login.');
+    LoggerService.w(
+      'Resposta 401/403 recebida. Disparando redirecionamento para Login.',
+    );
     try {
       _onUnauthorized?.call();
     } catch (e, st) {
@@ -59,11 +68,17 @@ class ApiService {
     return Duration(milliseconds: ms);
   }
 
-  Future<http.Response> _get(Uri url, {Duration? timeout, Map<String, String>? headers}) async {
+  Future<http.Response> _get(
+    Uri url, {
+    Duration? timeout,
+    Map<String, String>? headers,
+  }) async {
     int attempt = 0;
     while (true) {
       try {
-        final response = await http.get(url, headers: headers).timeout(timeout ?? _timeoutMedium);
+        final response = await _client
+            .get(url, headers: headers)
+            .timeout(timeout ?? _timeoutMedium);
         if (response.statusCode == 401 || response.statusCode == 403) {
           _handleUnauthorized();
         }
@@ -74,17 +89,26 @@ class ApiService {
           rethrow;
         }
         final delay = _backoffDelay(attempt);
-        LoggerService.w('Falha na requisição GET (tentativa $attempt). Retentando em ${delay.inMilliseconds}ms...');
+        LoggerService.w(
+          'Falha na requisição GET (tentativa $attempt). Retentando em ${delay.inMilliseconds}ms...',
+        );
         await Future.delayed(delay);
       }
     }
   }
 
-  Future<http.Response> _post(Uri url, {Duration? timeout, Map<String, String>? headers, Object? body}) async {
+  Future<http.Response> _post(
+    Uri url, {
+    Duration? timeout,
+    Map<String, String>? headers,
+    Object? body,
+  }) async {
     int attempt = 0;
     while (true) {
       try {
-        final response = await http.post(url, headers: headers, body: body).timeout(timeout ?? _timeoutMedium);
+        final response = await _client
+            .post(url, headers: headers, body: body)
+            .timeout(timeout ?? _timeoutMedium);
         if (response.statusCode == 401 || response.statusCode == 403) {
           _handleUnauthorized();
         }
@@ -95,7 +119,9 @@ class ApiService {
           rethrow;
         }
         final delay = _backoffDelay(attempt);
-        LoggerService.w('Falha na requisição POST (tentativa $attempt). Retentando em ${delay.inMilliseconds}ms...');
+        LoggerService.w(
+          'Falha na requisição POST (tentativa $attempt). Retentando em ${delay.inMilliseconds}ms...',
+        );
         await Future.delayed(delay);
       }
     }
@@ -103,7 +129,9 @@ class ApiService {
 
   /// Configura a URL base da API
   void configure(String baseUrl) {
-    _baseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    _baseUrl = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
   }
 
   /// Testa a conectividade com a API
@@ -114,14 +142,20 @@ class ApiService {
       final url = Uri.parse('$_baseUrl/licenca/$licencaTeste');
       LoggerService.d('Testando conectividade com: $url');
       final response = await _get(url, timeout: _timeoutShort);
-      LoggerService.d('Resposta recebida - Status: ${response.statusCode}, Body length: ${response.body.length}');
+      LoggerService.d(
+        'Resposta recebida - Status: ${response.statusCode}, Body length: ${response.body.length}',
+      );
       return response.statusCode < 500;
     } catch (e) {
       LoggerService.e('Erro de conectividade detalhado: $e');
       LoggerService.d('Tipo do erro: ${e.runtimeType}');
       if (e.toString().contains('Failed to fetch')) {
-        LoggerService.w('POSSÍVEL ERRO DE CORS: O navegador está bloqueando a requisição');
-        LoggerService.w('Verifique se o servidor da API tem CORS configurado para: ${Uri.base.origin}');
+        LoggerService.w(
+          'POSSÍVEL ERRO DE CORS: O navegador está bloqueando a requisição',
+        );
+        LoggerService.w(
+          'Verifique se o servidor da API tem CORS configurado para: ${Uri.base.origin}',
+        );
       }
       return false;
     }
@@ -153,7 +187,9 @@ class ApiService {
       LoggerService.e('Erro detalhado na validação: $e');
       LoggerService.d('Tipo do erro: ${e.runtimeType}');
       if (e.toString().contains('Failed to fetch')) {
-        LoggerService.w('ERRO DE CORS: Configure o servidor para aceitar requisições de: ${Uri.base.origin}');
+        LoggerService.w(
+          'ERRO DE CORS: Configure o servidor para aceitar requisições de: ${Uri.base.origin}',
+        );
       }
       throw Exception('Erro ao validar licença: $e');
     }
@@ -168,8 +204,6 @@ class ApiService {
       return false;
     }
   }
-
-
 
   /// Busca dados do produto por código de barras
   Future<Map<String, dynamic>?> buscarProduto(String codigoBarras) async {
@@ -195,9 +229,13 @@ class ApiService {
           return data[0] as Map<String, dynamic>;
         }
       } else if (responseDireta.statusCode == 404) {
-        LoggerService.d('Produto não encontrado via busca direta, tentando busca geral...');
+        LoggerService.d(
+          'Produto não encontrado via busca direta, tentando busca geral...',
+        );
       } else {
-        LoggerService.e('Erro na busca direta: ${responseDireta.statusCode}, tentando busca geral...');
+        LoggerService.e(
+          'Erro na busca direta: ${responseDireta.statusCode}, tentando busca geral...',
+        );
       }
       LoggerService.d('Iniciando busca geral como fallback...');
       final url = Uri.parse('$_baseUrl/produtos');
@@ -205,11 +243,15 @@ class ApiService {
       final response = await _get(url, timeout: _timeoutLong);
       LoggerService.d('Busca geral - Status: ${response.statusCode}');
       if (response.statusCode == 200) {
-        LoggerService.d('Tamanho da resposta: ${response.body.length} caracteres');
+        LoggerService.d(
+          'Tamanho da resposta: ${response.body.length} caracteres',
+        );
         try {
           LoggerService.d('Iniciando decodificação JSON...');
           final data = jsonDecode(response.body);
-          LoggerService.d('JSON decodificado com sucesso. Tipo: ${data.runtimeType}');
+          LoggerService.d(
+            'JSON decodificado com sucesso. Tipo: ${data.runtimeType}',
+          );
           if (data is List) {
             LoggerService.d('Total de produtos recebidos: ${data.length}');
             Map<String, dynamic>? produto;
@@ -231,7 +273,9 @@ class ApiService {
                     .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), '');
                 if (codBarrasStr == codigoBarrasStr) {
                   produto = item;
-                  LoggerService.d('PRODUTO ENCONTRADO no item $itemsProcessados!');
+                  LoggerService.d(
+                    'PRODUTO ENCONTRADO no item $itemsProcessados!',
+                  );
                   break;
                 }
               } catch (_) {
@@ -241,18 +285,24 @@ class ApiService {
                 LoggerService.d('Processados $itemsProcessados itens...');
               }
             }
-            LoggerService.d('Busca concluída. Items processados: $itemsProcessados');
+            LoggerService.d(
+              'Busca concluída. Items processados: $itemsProcessados',
+            );
             if (produto != null) {
               return produto;
             } else {
-              LoggerService.i('Produto com código "$codigoBarras" não encontrado');
+              LoggerService.i(
+                'Produto com código "$codigoBarras" não encontrado',
+              );
               return null;
             }
           } else if (data is Map<String, dynamic>) {
             LoggerService.d('Resposta é um Map, retornando diretamente');
             return data;
           } else {
-            LoggerService.w('Resposta da API não é um Map nem List: ${data.runtimeType}');
+            LoggerService.w(
+              'Resposta da API não é um Map nem List: ${data.runtimeType}',
+            );
             throw Exception('Formato de resposta inválido');
           }
         } catch (e) {
@@ -334,23 +384,23 @@ class ApiService {
       throw Exception('API não configurada');
     }
     try {
-      final itens = etiquetas.map((etiqueta) => {
-        'codigo': int.tryParse(etiqueta.etqCodmat ?? '0') ?? 0,
-        'barras': (etiqueta.etqEan13 ?? '')
-            .replaceAll(RegExp(r'[\s\r\n\t]'), '')
-            .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), ''),
-        'produto': etiqueta.etqDesc ?? '',
-        'un': etiqueta.etqUn ?? '',
-        'qtd': etiqueta.etqQtd ?? 1,
-        'dt_criacao': etiqueta.etqDthora ?? DateTime.now().toString(),
-        'danfe_etq': etiqueta.layetqText ?? '',
-      }).toList();
+      final itens = etiquetas
+          .map(
+            (etiqueta) => {
+              'codigo': int.tryParse(etiqueta.etqCodmat ?? '0') ?? 0,
+              'barras': (etiqueta.etqEan13 ?? '')
+                  .replaceAll(RegExp(r'[\s\r\n\t]'), '')
+                  .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), ''),
+              'produto': etiqueta.etqDesc ?? '',
+              'un': etiqueta.etqUn ?? '',
+              'qtd': etiqueta.etqQtd ?? 1,
+              'dt_criacao': etiqueta.etqDthora ?? DateTime.now().toString(),
+              'danfe_etq': etiqueta.layetqText ?? '',
+            },
+          )
+          .toList();
 
-      final requestBody = {
-        'coleta': 'ETIQUETA',
-        'imei': 7829,
-        'itens': itens,
-      };
+      final requestBody = {'coleta': 'ETIQUETA', 'imei': 7829, 'itens': itens};
       final url = Uri.parse('$_baseUrl/coletor');
       final response = await _post(
         url,
@@ -387,11 +437,15 @@ class ApiService {
       final response = await _get(url, timeout: _timeoutLong);
       LoggerService.d('Busca FV - Status: ${response.statusCode}');
       if (response.statusCode == 200) {
-        LoggerService.d('Tamanho da resposta: ${response.body.length} caracteres');
+        LoggerService.d(
+          'Tamanho da resposta: ${response.body.length} caracteres',
+        );
         try {
           LoggerService.d('Iniciando decodificação JSON...');
           final data = jsonDecode(response.body);
-          LoggerService.d('JSON decodificado com sucesso. Tipo: ${data.runtimeType}');
+          LoggerService.d(
+            'JSON decodificado com sucesso. Tipo: ${data.runtimeType}',
+          );
           if (data is List) {
             LoggerService.d('Total de produtos recebidos: ${data.length}');
             Map<String, dynamic>? produto;
@@ -413,7 +467,9 @@ class ApiService {
                     .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), '');
                 if (codBarrasStr == codigoBarrasStr) {
                   produto = item;
-                  LoggerService.d('PRODUTO ENCONTRADO no item $itemsProcessados!');
+                  LoggerService.d(
+                    'PRODUTO ENCONTRADO no item $itemsProcessados!',
+                  );
                   break;
                 }
               } catch (_) {
@@ -427,14 +483,18 @@ class ApiService {
               LoggerService.i('Produto encontrado com sucesso!');
               return produto;
             } else {
-              LoggerService.i('Produto não encontrado na lista de ${data.length} itens');
+              LoggerService.i(
+                'Produto não encontrado na lista de ${data.length} itens',
+              );
               return null;
             }
           } else if (data is Map<String, dynamic>) {
             LoggerService.d('Resposta única recebida');
             return data;
           } else {
-            LoggerService.w('Formato de resposta inesperado: ${data.runtimeType}');
+            LoggerService.w(
+              'Formato de resposta inesperado: ${data.runtimeType}',
+            );
             return null;
           }
         } catch (e) {
@@ -458,8 +518,6 @@ class ApiService {
     try {
       LoggerService.d('Enviando inventário com ${itens.length} itens...');
       final inventarioRequest = InventarioRequest(
-        coleta: 'INVENTARIO',
-        imei: 7829,
         itens: itens,
       );
       final url = Uri.parse('$_baseUrl/coletor');
@@ -467,7 +525,12 @@ class ApiService {
       final body = jsonEncode(inventarioRequest.toJson());
       // Evita logar corpo completo
       LoggerService.d('Tamanho do corpo da requisição: ${body.length}');
-      final response = await _post(url, headers: _jsonHeaders, body: body, timeout: _timeoutLong);
+      final response = await _post(
+        url,
+        headers: _jsonHeaders,
+        body: body,
+        timeout: _timeoutLong,
+      );
       LoggerService.d('Status da resposta: ${response.statusCode}');
       if (response.statusCode == 200 || response.statusCode == 201) {
         LoggerService.i('Inventário enviado com sucesso!');
@@ -489,7 +552,6 @@ class ApiService {
       LoggerService.d('Enviando entrada com ${itens.length} itens...');
       final entradaRequest = InventarioRequest(
         coleta: 'ENTRADA',
-        imei: 7829,
         itens: itens,
       );
       final url = Uri.parse('$_baseUrl/coletor');
@@ -497,7 +559,12 @@ class ApiService {
       final body = jsonEncode(entradaRequest.toJson());
       // Evita logar corpo completo
       LoggerService.d('Tamanho do corpo da requisição: ${body.length}');
-      final response = await _post(url, headers: _jsonHeaders, body: body, timeout: _timeoutLong);
+      final response = await _post(
+        url,
+        headers: _jsonHeaders,
+        body: body,
+        timeout: _timeoutLong,
+      );
       LoggerService.d('Status da resposta: ${response.statusCode}');
       if (response.statusCode == 200 || response.statusCode == 201) {
         LoggerService.i('Entrada enviada com sucesso!');

@@ -1,16 +1,12 @@
+import 'package:coletor_dados/services/logger_service.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'logger_service.dart';
 
 class ScannerService {
   static Future<String?> scanBarcode(BuildContext context) async {
     LoggerService.d('ScannerService: Iniciando scanner...');
     try {
-      final result = await Navigator.of(context).push<String>(
-        MaterialPageRoute(
-          builder: (context) => const BarcodeScannerScreen(),
-        ),
-      );
+      final result = await Navigator.of(context).pushNamed<String>('/scanner');
       LoggerService.d('ScannerService: Scanner retornou: $result');
       // Sanitiza o código antes de retornar
       final sanitized = (result ?? '')
@@ -58,20 +54,22 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       ),
       body: Stack(
         children: [
-          MobileScanner(
-            controller: controller,
-            onDetect: _foundBarcode,
-          ),
+          MobileScanner(controller: controller, onDetect: _foundBarcode),
           if (_isHandlingResult)
             Positioned.fill(
               child: Container(
                 color: Colors.black54,
-                child: Column(
+                child: const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
                     SizedBox(height: 16),
-                    Text('Processando código...', style: TextStyle(color: Colors.white)),
+                    Text(
+                      'Processando código...',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ],
                 ),
               ),
@@ -83,7 +81,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
 
   void _foundBarcode(BarcodeCapture capture) {
     if (_isHandlingResult) {
-      LoggerService.d('BarcodeScannerScreen: Detecção ignorada (já processando resultado).');
+      LoggerService.d(
+        'BarcodeScannerScreen: Detecção ignorada (já processando resultado).',
+      );
       return;
     }
 
@@ -92,7 +92,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
         .replaceAll(RegExp(r'[\s\r\n\t]'), '')
         .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), '');
     if (code.isEmpty) {
-      LoggerService.d('BarcodeScannerScreen: Código vazio, ignorando detecção.');
+      LoggerService.d(
+        'BarcodeScannerScreen: Código vazio, ignorando detecção.',
+      );
       return;
     }
 
@@ -105,11 +107,15 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     controller.stop();
 
     if (!mounted) {
-      LoggerService.d('BarcodeScannerScreen: Widget não montado, abortando pop.');
+      LoggerService.d(
+        'BarcodeScannerScreen: Widget não montado, abortando pop.',
+      );
       return;
     }
 
-    LoggerService.d('BarcodeScannerScreen: Fechando scanner e retornando código...');
+    LoggerService.d(
+      'BarcodeScannerScreen: Fechando scanner e retornando código...',
+    );
     Navigator.of(context).pop(code);
     LoggerService.d('BarcodeScannerScreen: Navigator.pop executado');
   }

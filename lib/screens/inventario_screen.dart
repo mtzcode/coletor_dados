@@ -1,14 +1,13 @@
+import 'package:coletor_dados/models/inventario_item.dart';
+import 'package:coletor_dados/models/produto.dart';
+import 'package:coletor_dados/providers/config_provider.dart';
+import 'package:coletor_dados/services/api_service.dart';
+import 'package:coletor_dados/services/feedback_service.dart';
+import 'package:coletor_dados/services/logger_service.dart';
+import 'package:coletor_dados/services/scanner_service.dart';
+import 'package:coletor_dados/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/produto.dart';
-import '../models/inventario_item.dart';
-import '../providers/config_provider.dart';
-import '../services/api_service.dart';
-import '../services/storage_service.dart';
-import '../services/scanner_service.dart';
-import '../services/feedback_service.dart';
-import '../services/logger_service.dart';
-import 'inventario_update_screen.dart';
 
 class InventarioScreen extends StatefulWidget {
   const InventarioScreen({super.key});
@@ -19,9 +18,9 @@ class InventarioScreen extends StatefulWidget {
 
 class _InventarioScreenState extends State<InventarioScreen> {
   final _codigoController = TextEditingController();
-  
+
   bool _isSearching = false;
-  
+
   // Lista de itens de inventário (com quantidade já definida)
   final List<InventarioItem> _itensInventario = [];
   int _contadorItens = 1;
@@ -86,7 +85,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
 
   Future<void> _pesquisarProduto() async {
     final codigo = _codigoController.text.trim();
-    
+
     if (codigo.isEmpty) {
       _showMessage('Digite um código para pesquisar');
       return;
@@ -97,21 +96,26 @@ class _InventarioScreenState extends State<InventarioScreen> {
     });
 
     try {
-      final configProvider = Provider.of<ConfigProvider>(context, listen: false);
-      
+      final configProvider = Provider.of<ConfigProvider>(
+        context,
+        listen: false,
+      );
+
       // Configura a API se necessário
-      if (configProvider.config.endereco.isNotEmpty && configProvider.config.porta.isNotEmpty) {
-        final baseUrl = 'http://${configProvider.config.endereco}:${configProvider.config.porta}/api';
+      if (configProvider.config.endereco.isNotEmpty &&
+          configProvider.config.porta.isNotEmpty) {
+        final baseUrl =
+            'http://${configProvider.config.endereco}:${configProvider.config.porta}/api';
         ApiService.instance.configure(baseUrl);
       }
 
       final produto = await ApiService.instance.buscarProdutoFV(codigo);
-      
+
       if (produto != null) {
         if (!mounted) return;
         // Limpa o campo de código
         _codigoController.clear();
-        
+
         // Cria o produto e abre automaticamente a tela de quantidade
         final novoProduto = Produto.fromJson(produto, _contadorItens);
         _abrirTelaQuantidade(novoProduto);
@@ -135,12 +139,11 @@ class _InventarioScreenState extends State<InventarioScreen> {
 
   void _abrirTelaQuantidade(Produto produto) async {
     final navigator = Navigator.of(context);
-    final resultado = await navigator.push<InventarioItem>(
-      MaterialPageRoute(
-        builder: (context) => InventarioUpdateScreen(produto: produto),
-      ),
+    final resultado = await navigator.pushNamed<InventarioItem>(
+      '/inventario-update',
+      arguments: produto,
     );
-    
+
     if (!mounted) return;
     if (resultado != null) {
       setState(() {
@@ -177,18 +180,17 @@ class _InventarioScreenState extends State<InventarioScreen> {
       dataAtualizacao: '',
       qtdEstoque: item.estoqueAtual,
     );
-    
+
     _abrirEdicaoItem(produto, index);
   }
 
   void _abrirEdicaoItem(Produto produto, int index) async {
     final navigator = Navigator.of(context);
-    final resultado = await navigator.push<InventarioItem>(
-      MaterialPageRoute(
-        builder: (context) => InventarioUpdateScreen(produto: produto),
-      ),
+    final resultado = await navigator.pushNamed<InventarioItem>(
+      '/inventario-update',
+      arguments: produto,
     );
-    
+
     if (!mounted) return;
     if (resultado != null) {
       setState(() {
@@ -206,19 +208,27 @@ class _InventarioScreenState extends State<InventarioScreen> {
       return;
     }
 
+    // Capture o Navigator antes de qualquer await para evitar uso de context após async gap
+    final navigator = Navigator.of(context);
+
     try {
       await ApiService.instance.enviarInventario(_itensInventario);
       if (!mounted) return;
       _showMessage('Inventário enviado com sucesso!');
-      
+
       // Limpa a lista após envio
       setState(() {
         _itensInventario.clear();
         _contadorItens = 1;
       });
-      
+
       // Limpa os itens salvos no armazenamento local
       await StorageService.clearInventarioItens();
+
+      // Garanta que o widget ainda está montado antes de navegar
+      if (!mounted) return;
+      // Volta para Home limpando a pilha
+      navigator.pushNamedAndRemoveUntil('/home', (route) => false);
     } catch (e) {
       if (mounted) {
         _showMessage('Erro ao enviar inventário: $e');
@@ -284,7 +294,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: _isSearching ? null : _pesquisarProduto,
-                    icon: _isSearching 
+                    icon: _isSearching
                         ? const SizedBox(
                             width: 20,
                             height: 20,
@@ -302,7 +312,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
               ],
             ),
           ),
-          
+
           // Lista de itens do inventário
           Expanded(
             child: _itensInventario.isEmpty
@@ -310,26 +320,16 @@ class _InventarioScreenState extends State<InventarioScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.inventory,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
+                        Icon(Icons.inventory, size: 64, color: Colors.grey),
                         SizedBox(height: 16),
                         Text(
                           'Nenhum item no inventário',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey,
-                          ),
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
                         ),
                         SizedBox(height: 8),
                         Text(
                           'Pesquise produtos para adicionar ao inventário',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -344,7 +344,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                     },
                   ),
           ),
-          
+
           // Botão de enviar inventário
           if (_itensInventario.isNotEmpty)
             Container(
@@ -354,7 +354,9 @@ class _InventarioScreenState extends State<InventarioScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _enviarInventario,
                   icon: const Icon(Icons.send),
-                  label: Text('Enviar Inventário (${_itensInventario.length} itens)'),
+                  label: Text(
+                    'Enviar Inventário (${_itensInventario.length} itens)',
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
@@ -380,7 +382,10 @@ class _InventarioScreenState extends State<InventarioScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.purple[100],
                     borderRadius: BorderRadius.circular(12),
@@ -408,10 +413,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                 const SizedBox(width: 8),
                 Text(
                   item.dtCriacaoFormatada,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
@@ -427,27 +429,27 @@ class _InventarioScreenState extends State<InventarioScreen> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Segunda linha: Nome do produto
             Text(
               item.produto,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Terceira linha: Estoque atual e novo estoque
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orange[100],
                     borderRadius: BorderRadius.circular(8),
@@ -463,7 +465,10 @@ class _InventarioScreenState extends State<InventarioScreen> {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green[100],
                     borderRadius: BorderRadius.circular(8),
@@ -479,7 +484,10 @@ class _InventarioScreenState extends State<InventarioScreen> {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue[100],
                     borderRadius: BorderRadius.circular(8),

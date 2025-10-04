@@ -1,15 +1,12 @@
+import 'package:coletor_dados/models/inventario_item.dart';
+import 'package:coletor_dados/models/produto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../models/produto.dart';
-import '../models/inventario_item.dart';
 
 class InventarioUpdateScreen extends StatefulWidget {
   final Produto produto;
 
-  const InventarioUpdateScreen({
-    super.key,
-    required this.produto,
-  });
+  const InventarioUpdateScreen({super.key, required this.produto});
 
   @override
   State<InventarioUpdateScreen> createState() => _InventarioUpdateScreenState();
@@ -35,7 +32,7 @@ class _InventarioUpdateScreenState extends State<InventarioUpdateScreen> {
   void _confirmarQuantidade() {
     if (_formKey.currentState!.validate()) {
       final novaQuantidade = double.tryParse(_quantidadeController.text) ?? 0.0;
-      
+
       // Cria o item de inventário
       final inventarioItem = InventarioItem(
         item: widget.produto.numeroItem,
@@ -46,7 +43,7 @@ class _InventarioUpdateScreenState extends State<InventarioUpdateScreen> {
         estoqueAtual: widget.produto.qtdEstoque ?? 0.0,
         novoEstoque: novaQuantidade,
       );
-      
+
       // Retorna o item para a tela anterior
       Navigator.pop(context, inventarioItem);
     }
@@ -80,9 +77,7 @@ class _InventarioUpdateScreenState extends State<InventarioUpdateScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.grey[100],
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey[300]!),
-                ),
+                border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,7 +85,10 @@ class _InventarioUpdateScreenState extends State<InventarioUpdateScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.purple,
                           borderRadius: BorderRadius.circular(12),
@@ -148,7 +146,7 @@ class _InventarioUpdateScreenState extends State<InventarioUpdateScreen> {
                 ],
               ),
             ),
-            
+
             // Formulário de atualização
             Expanded(
               child: Padding(
@@ -164,7 +162,7 @@ class _InventarioUpdateScreenState extends State<InventarioUpdateScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    
+
                     TextFormField(
                       controller: _quantidadeController,
                       decoration: const InputDecoration(
@@ -173,9 +171,13 @@ class _InventarioUpdateScreenState extends State<InventarioUpdateScreen> {
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.numbers),
                       ),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d*\.?\d*'),
+                        ),
                       ],
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -193,9 +195,9 @@ class _InventarioUpdateScreenState extends State<InventarioUpdateScreen> {
                       autofocus: true,
                       onFieldSubmitted: (_) => _confirmarQuantidade(),
                     ),
-                    
+
                     const Spacer(),
-                    
+
                     // Botões de ação
                     Row(
                       children: [

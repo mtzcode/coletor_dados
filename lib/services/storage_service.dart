@@ -1,10 +1,11 @@
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:coletor_dados/models/app_config.dart';
+import 'package:coletor_dados/models/inventario_item.dart';
+import 'package:coletor_dados/models/produto.dart';
+import 'package:coletor_dados/services/logger_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'logger_service.dart';
-import '../models/app_config.dart';
-import '../models/produto.dart';
-import '../models/inventario_item.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
   static String _sanitizeBarcode(String input) {
@@ -13,6 +14,7 @@ class StorageService {
     s = s.replaceAll(RegExp(r'[\u0000-\u001F]'), '');
     return s;
   }
+
   static const String _configKey = 'app_config';
   static const String _etiquetasKey = 'etiquetas_pendentes';
   static const String _inventarioKey = 'inventario_itens';
@@ -21,7 +23,7 @@ class StorageService {
   // Secure storage keys and instance
   static const String _secureLicenseKey = 'secure_license';
   static const String _fallbackLicenseKey = 'license_fallback';
-  static final FlutterSecureStorage _secure = FlutterSecureStorage();
+  static const FlutterSecureStorage _secure = FlutterSecureStorage();
 
   /// Salva a configuração no armazenamento local
   static Future<bool> saveConfig(AppConfig config) async {
@@ -30,9 +32,14 @@ class StorageService {
       try {
         await _secure.write(key: _secureLicenseKey, value: config.licenca);
       } catch (e) {
-        LoggerService.w('Falha ao salvar licença segura, aplicando fallback: $e');
+        LoggerService.w(
+          'Falha ao salvar licença segura, aplicando fallback: $e',
+        );
         final prefsFallback = await SharedPreferences.getInstance();
-        await prefsFallback.setString(_fallbackLicenseKey, base64Encode(utf8.encode(config.licenca)));
+        await prefsFallback.setString(
+          _fallbackLicenseKey,
+          base64Encode(utf8.encode(config.licenca)),
+        );
       }
 
       final prefs = await SharedPreferences.getInstance();
@@ -46,7 +53,7 @@ class StorageService {
     } catch (e) {
       LoggerService.e('Erro ao salvar configuração: $e');
       return false;
-    } 
+    }
   }
 
   /// Carrega a configuração do armazenamento local
@@ -54,9 +61,9 @@ class StorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final configJson = prefs.getString(_configKey);
-      
+
       if (configJson == null) return null;
-      
+
       final configMap = jsonDecode(configJson) as Map<String, dynamic>;
       var cfg = AppConfig.fromMap(configMap);
       try {
@@ -74,7 +81,9 @@ class StorageService {
           }
         }
       } catch (e) {
-        LoggerService.w('Falha ao carregar licença segura, usando fallback: $e');
+        LoggerService.w(
+          'Falha ao carregar licença segura, usando fallback: $e',
+        );
         final b64 = prefs.getString(_fallbackLicenseKey);
         if (b64 != null) {
           try {
@@ -123,7 +132,9 @@ class StorageService {
   static Future<bool> saveEtiquetas(List<Produto> etiquetas) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final etiquetasJson = jsonEncode(etiquetas.map((e) => e.toJson()).toList());
+      final etiquetasJson = jsonEncode(
+        etiquetas.map((e) => e.toJson()).toList(),
+      );
       return await prefs.setString(_etiquetasKey, etiquetasJson);
     } catch (e) {
       LoggerService.e('Erro ao salvar etiquetas: $e');
@@ -136,9 +147,9 @@ class StorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final etiquetasJson = prefs.getString(_etiquetasKey);
-      
+
       if (etiquetasJson == null) return [];
-      
+
       final etiquetasList = jsonDecode(etiquetasJson) as List<dynamic>;
       return etiquetasList.map((json) {
         // Precisamos criar um fromJson que aceite dados serializados
@@ -149,7 +160,9 @@ class StorageService {
           produto: data['produto'] ?? '',
           unidade: data['unidade'] ?? '',
           valorVenda: (data['valor_venda'] as num?)?.toDouble() ?? 0.0,
-          dataHoraRequisicao: DateTime.parse(data['data_hora_requisicao'] ?? DateTime.now().toIso8601String()),
+          dataHoraRequisicao: DateTime.parse(
+            data['data_hora_requisicao'] ?? DateTime.now().toIso8601String(),
+          ),
           numeroItem: data['numero_item'] ?? 0,
           tipoEtiqueta: data['tipo_etiqueta'],
         );
@@ -186,16 +199,22 @@ class StorageService {
   static Future<bool> saveInventarioItens(List<InventarioItem> itens) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final itensJson = jsonEncode(itens.map((item) => {
-        'item': item.item,
-        'codigo': item.codigo,
-        'barras': _sanitizeBarcode(item.barras),
-        'produto': item.produto,
-        'unidade': item.unidade,
-        'estoqueAtual': item.estoqueAtual,
-        'novoEstoque': item.novoEstoque,
-        'dtCriacao': item.dtCriacao.toIso8601String(),
-      }).toList());
+      final itensJson = jsonEncode(
+        itens
+            .map(
+              (item) => {
+                'item': item.item,
+                'codigo': item.codigo,
+                'barras': _sanitizeBarcode(item.barras),
+                'produto': item.produto,
+                'unidade': item.unidade,
+                'estoqueAtual': item.estoqueAtual,
+                'novoEstoque': item.novoEstoque,
+                'dtCriacao': item.dtCriacao.toIso8601String(),
+              },
+            )
+            .toList(),
+      );
       return await prefs.setString(_inventarioKey, itensJson);
     } catch (e) {
       LoggerService.e('Erro ao salvar itens de inventário: $e');
@@ -208,9 +227,9 @@ class StorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final itensJson = prefs.getString(_inventarioKey);
-      
+
       if (itensJson == null) return [];
-      
+
       final itensList = jsonDecode(itensJson) as List<dynamic>;
       return itensList.map((json) {
         final data = json as Map<String, dynamic>;
@@ -222,7 +241,9 @@ class StorageService {
           unidade: data['unidade'] ?? '',
           estoqueAtual: (data['estoqueAtual'] as num?)?.toDouble() ?? 0.0,
           novoEstoque: (data['novoEstoque'] as num?)?.toDouble() ?? 0.0,
-          dtCriacao: DateTime.parse(data['dtCriacao'] ?? DateTime.now().toIso8601String()),
+          dtCriacao: DateTime.parse(
+            data['dtCriacao'] ?? DateTime.now().toIso8601String(),
+          ),
         );
       }).toList();
     } catch (e) {
@@ -257,16 +278,22 @@ class StorageService {
   static Future<bool> saveEntradaItens(List<InventarioItem> itens) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final itensJson = jsonEncode(itens.map((item) => {
-        'item': item.item,
-        'codigo': item.codigo,
-        'barras': item.barras,
-        'produto': item.produto,
-        'unidade': item.unidade,
-        'estoqueAtual': item.estoqueAtual,
-        'novoEstoque': item.novoEstoque,
-        'dtCriacao': item.dtCriacao.toIso8601String(),
-      }).toList());
+      final itensJson = jsonEncode(
+        itens
+            .map(
+              (item) => {
+                'item': item.item,
+                'codigo': item.codigo,
+                'barras': item.barras,
+                'produto': item.produto,
+                'unidade': item.unidade,
+                'estoqueAtual': item.estoqueAtual,
+                'novoEstoque': item.novoEstoque,
+                'dtCriacao': item.dtCriacao.toIso8601String(),
+              },
+            )
+            .toList(),
+      );
       return await prefs.setString(_entradaKey, itensJson);
     } catch (e) {
       LoggerService.e('Erro ao salvar itens de entrada: $e');
@@ -279,9 +306,9 @@ class StorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final itensJson = prefs.getString(_entradaKey);
-      
+
       if (itensJson == null) return [];
-      
+
       final itensList = jsonDecode(itensJson) as List<dynamic>;
       return itensList.map((json) {
         final data = json as Map<String, dynamic>;
@@ -293,7 +320,9 @@ class StorageService {
           unidade: data['unidade'] ?? '',
           estoqueAtual: (data['estoqueAtual'] as num?)?.toDouble() ?? 0.0,
           novoEstoque: (data['novoEstoque'] as num?)?.toDouble() ?? 0.0,
-          dtCriacao: DateTime.parse(data['dtCriacao'] ?? DateTime.now().toIso8601String()),
+          dtCriacao: DateTime.parse(
+            data['dtCriacao'] ?? DateTime.now().toIso8601String(),
+          ),
         );
       }).toList();
     } catch (e) {

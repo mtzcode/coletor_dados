@@ -1,14 +1,13 @@
+import 'package:coletor_dados/models/inventario_item.dart';
+import 'package:coletor_dados/models/produto.dart';
+import 'package:coletor_dados/providers/config_provider.dart';
+import 'package:coletor_dados/services/api_service.dart';
+import 'package:coletor_dados/services/feedback_service.dart';
+import 'package:coletor_dados/services/logger_service.dart';
+import 'package:coletor_dados/services/scanner_service.dart';
+import 'package:coletor_dados/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/produto.dart';
-import '../models/inventario_item.dart';
-import '../providers/config_provider.dart';
-import '../services/api_service.dart';
-import '../services/scanner_service.dart';
-import '../services/storage_service.dart';
-import '../services/logger_service.dart';
-import '../services/feedback_service.dart';
-import 'inventario_update_screen.dart';
 
 class EntradaScreen extends StatefulWidget {
   const EntradaScreen({super.key});
@@ -19,9 +18,9 @@ class EntradaScreen extends StatefulWidget {
 
 class _EntradaScreenState extends State<EntradaScreen> {
   final _codigoController = TextEditingController();
-  
+
   bool _isSearching = false;
-  
+
   // Lista de itens de entrada (com quantidade já definida)
   final List<InventarioItem> _itensEntrada = [];
   int _contadorItens = 1;
@@ -86,7 +85,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
 
   Future<void> _pesquisarProduto() async {
     final codigo = _codigoController.text.trim();
-    
+
     if (codigo.isEmpty) {
       _showMessage('Digite um código para pesquisar');
       return;
@@ -97,22 +96,27 @@ class _EntradaScreenState extends State<EntradaScreen> {
     });
 
     try {
-      final configProvider = Provider.of<ConfigProvider>(context, listen: false);
+      final configProvider = Provider.of<ConfigProvider>(
+        context,
+        listen: false,
+      );
       // Removido: final navigator = Navigator.of(context);
-      
+
       // Configura a API se necessário
-      if (configProvider.config.endereco.isNotEmpty && configProvider.config.porta.isNotEmpty) {
-        final baseUrl = 'http://${configProvider.config.endereco}:${configProvider.config.porta}/api';
+      if (configProvider.config.endereco.isNotEmpty &&
+          configProvider.config.porta.isNotEmpty) {
+        final baseUrl =
+            'http://${configProvider.config.endereco}:${configProvider.config.porta}/api';
         ApiService.instance.configure(baseUrl);
       }
 
       final produto = await ApiService.instance.buscarProdutoFV(codigo);
-      
+
       if (produto != null) {
         if (!mounted) return;
         // Limpa o campo de código
         _codigoController.clear();
-        
+
         // Cria o produto e abre automaticamente a tela de quantidade
         final novoProduto = Produto.fromJson(produto, _contadorItens);
         _abrirTelaQuantidade(novoProduto);
@@ -136,12 +140,11 @@ class _EntradaScreenState extends State<EntradaScreen> {
 
   void _abrirTelaQuantidade(Produto produto) async {
     final navigator = Navigator.of(context);
-    final resultado = await navigator.push<InventarioItem>(
-      MaterialPageRoute(
-        builder: (context) => InventarioUpdateScreen(produto: produto),
-      ),
+    final resultado = await navigator.pushNamed<InventarioItem>(
+      '/inventario-update',
+      arguments: produto,
     );
-    
+
     if (!mounted) return;
     if (resultado != null) {
       setState(() {
@@ -177,18 +180,17 @@ class _EntradaScreenState extends State<EntradaScreen> {
       dataAtualizacao: '',
       qtdEstoque: item.estoqueAtual,
     );
-    
+
     _abrirEdicaoItem(produto, index);
   }
 
   void _abrirEdicaoItem(Produto produto, int index) async {
     final navigator = Navigator.of(context);
-    final resultado = await navigator.push<InventarioItem>(
-      MaterialPageRoute(
-        builder: (context) => InventarioUpdateScreen(produto: produto),
-      ),
+    final resultado = await navigator.pushNamed<InventarioItem>(
+      '/inventario-update',
+      arguments: produto,
     );
-    
+
     if (!mounted) return;
     if (resultado != null) {
       setState(() {
@@ -215,7 +217,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
         _itensEntrada.clear();
       });
       await StorageService.clearEntradaItens();
-      navigator.pop();
+      navigator.pushNamedAndRemoveUntil('/home', (route) => false);
     } catch (e) {
       if (mounted) {
         _showMessage('Erro ao enviar entrada: $e');
@@ -281,7 +283,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: _isSearching ? null : _pesquisarProduto,
-                    icon: _isSearching 
+                    icon: _isSearching
                         ? const SizedBox(
                             width: 20,
                             height: 20,
@@ -299,7 +301,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
               ],
             ),
           ),
-          
+
           // Lista de itens da entrada
           Expanded(
             child: _itensEntrada.isEmpty
@@ -307,26 +309,16 @@ class _EntradaScreenState extends State<EntradaScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.input,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
+                        Icon(Icons.input, size: 64, color: Colors.grey),
                         SizedBox(height: 16),
                         Text(
                           'Nenhum item na entrada',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey,
-                          ),
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
                         ),
                         SizedBox(height: 8),
                         Text(
                           'Pesquise produtos para adicionar à entrada',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -341,7 +333,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
                     },
                   ),
           ),
-          
+
           // Botão de enviar entrada
           if (_itensEntrada.isNotEmpty)
             Container(
@@ -377,7 +369,10 @@ class _EntradaScreenState extends State<EntradaScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.teal[100],
                     borderRadius: BorderRadius.circular(12),
@@ -405,10 +400,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
                 const SizedBox(width: 8),
                 Text(
                   item.dtCriacaoFormatada,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
@@ -424,27 +416,27 @@ class _EntradaScreenState extends State<EntradaScreen> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Segunda linha: Nome do produto
             Text(
               item.produto,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Terceira linha: Estoque atual e novo estoque
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orange[100],
                     borderRadius: BorderRadius.circular(8),
@@ -460,7 +452,10 @@ class _EntradaScreenState extends State<EntradaScreen> {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green[100],
                     borderRadius: BorderRadius.circular(8),
@@ -476,7 +471,10 @@ class _EntradaScreenState extends State<EntradaScreen> {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue[100],
                     borderRadius: BorderRadius.circular(8),

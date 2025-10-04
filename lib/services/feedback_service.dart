@@ -42,13 +42,23 @@ class FeedbackService {
   /// Heurística simples para classificar a mensagem e aplicar cor adequada
   static FeedbackType classifyMessage(String message) {
     final m = message.toLowerCase();
-    if (m.contains('erro') || m.contains('não encontrado') || m.contains('inexistente') || m.contains('falha')) {
+    if (m.contains('erro') ||
+        m.contains('não encontrado') ||
+        m.contains('inexistente') ||
+        m.contains('falha')) {
       return FeedbackType.error;
     }
-    if (m.contains('sucesso') || m.contains('adicionado') || m.contains('removido') || m.contains('atualizado') || m.contains('enviado')) {
+    if (m.contains('sucesso') ||
+        m.contains('adicionado') ||
+        m.contains('removido') ||
+        m.contains('atualizado') ||
+        m.contains('enviado')) {
       return FeedbackType.success;
     }
-    if (m.contains('atenção') || m.contains('aviso') || m.contains('selecione') || m.contains('adicione')) {
+    if (m.contains('atenção') ||
+        m.contains('aviso') ||
+        m.contains('selecione') ||
+        m.contains('adicione')) {
       return FeedbackType.warning;
     }
     return FeedbackType.info;

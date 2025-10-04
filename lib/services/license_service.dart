@@ -4,7 +4,8 @@ class LicenseService {
   /// Gera uma licença de 4 dígitos
   static String generateLicense() {
     final random = Random();
-    return (1000 + random.nextInt(9000)).toString(); // Gera número de 4 dígitos (1000-9999)
+    return (1000 + random.nextInt(9000))
+        .toString(); // Gera número de 4 dígitos (1000-9999)
   }
 
   /// Valida se o formato da licença está correto (4 dígitos)

@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-import 'config_screen.dart';
-import 'etiqueta_screen.dart';
-import 'consulta_preco_screen.dart';
-import 'inventario_screen.dart';
-import 'entrada_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,48 +14,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _abrirEtiqueta() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const EtiquetaScreen(),
-      ),
-    );
+    Navigator.pushNamed(context, '/etiqueta');
   }
 
   void _abrirConsultaPreco() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ConsultaPrecoScreen(),
-      ),
-    );
+    Navigator.pushNamed(context, '/consulta');
   }
 
   void _abrirInventario() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const InventarioScreen(),
-      ),
-    );
+    Navigator.pushNamed(context, '/inventario');
   }
 
   void _abrirEntrada() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const EntradaScreen(),
-      ),
-    );
+    Navigator.pushNamed(context, '/entrada');
   }
 
   void _irParaConfiguracoes() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ConfigScreen(fromScreen: 'home'),
-      ),
-    );
+    Navigator.pushNamed(context, '/config', arguments: 'home');
   }
 
   @override
@@ -83,11 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.qr_code_scanner,
-                size: 80,
-                color: Colors.orange,
-              ),
+              const Icon(Icons.qr_code_scanner, size: 80, color: Colors.orange),
               const SizedBox(height: 24),
               const Text(
                 'Sistema de Etiquetas',
@@ -101,10 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 16),
               const Text(
                 'Pesquise produtos por código de barras\ne imprima etiquetas facilmente',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 48),

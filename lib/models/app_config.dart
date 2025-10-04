@@ -13,10 +13,10 @@ class AppConfig {
 
   // Construtor para criar uma configuração vazia
   AppConfig.empty()
-      : endereco = '',
-        porta = '',
-        licenca = '',
-        isConfigured = false;
+    : endereco = '',
+      porta = '',
+      licenca = '',
+      isConfigured = false;
 
   // Método para criar uma cópia com modificações
   AppConfig copyWith({

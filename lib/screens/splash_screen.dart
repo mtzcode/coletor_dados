@@ -1,8 +1,6 @@
+import 'package:coletor_dados/providers/config_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/config_provider.dart';
-import 'login_screen.dart';
-import 'config_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -23,42 +21,34 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _initializeApp() async {
     final configProvider = Provider.of<ConfigProvider>(context, listen: false);
     final navigator = Navigator.of(context);
-    
+
     // Inicializa o provider
     await configProvider.init();
-    
+
     // Aguarda um pouco para mostrar a splash screen
     await Future.delayed(const Duration(seconds: 2));
-    
+
     if (!mounted) return;
-    
+
     // Navega para a tela apropriada
     if (configProvider.isConfigured) {
-      navigator.pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
+      navigator.pushReplacementNamed('/login');
     } else {
-      navigator.pushReplacement(
-        MaterialPageRoute(builder: (context) => const ConfigScreen(fromScreen: 'splash')),
-      );
+      navigator.pushReplacementNamed('/config', arguments: 'splash');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: Colors.blue,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.inventory_2,
-              size: 80,
-              color: Colors.white,
-            ),
-            const SizedBox(height: 20),
-            const Text(
+            Icon(Icons.inventory_2, size: 80, color: Colors.white),
+            SizedBox(height: 20),
+            Text(
               'Coletor de Dados',
               style: TextStyle(
                 fontSize: 28,
@@ -66,17 +56,14 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 40),
-            const CircularProgressIndicator(
+            SizedBox(height: 40),
+            CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20),
+            Text(
               'Inicializando...',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white70,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.white70),
             ),
           ],
         ),
