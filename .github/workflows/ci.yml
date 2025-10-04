@@ -30,6 +30,20 @@ jobs:
       - name: Run tests (with coverage)
         run: flutter test --coverage
 
+      - name: Verify coverage threshold (>= 70%)
+        run: |
+          set -e
+          total_found=$(awk -F: '/^LF:/ {sum+=$2} END {print sum}' coverage/lcov.info)
+          total_hit=$(awk -F: '/^LH:/ {sum+=$2} END {print sum}' coverage/lcov.info)
+          echo "LH=$total_hit LF=$total_found"
+          if [ -z "$total_found" ] || [ -z "$total_hit" ] || [ "$total_found" -eq 0 ]; then
+            echo "Coverage data missing or LF is 0"; exit 1
+          fi
+          coverage=$(awk -v h="$total_hit" -v f="$total_found" 'BEGIN { printf "%.2f", (h/f)*100 }')
+          echo "Coverage: $coverage%"
+          threshold=70
+          awk -v cov="$coverage" -v thr="$threshold" 'BEGIN { if (cov+0 < thr+0) exit 1 }' || { echo "Coverage below threshold ($threshold%)"; exit 1; }
+
       - name: Upload coverage artifact
         if: success()
         uses: actions/upload-artifact@v4
