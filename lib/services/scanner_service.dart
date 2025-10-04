@@ -28,7 +28,8 @@ class BarcodeScannerScreen extends StatefulWidget {
   State<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
 }
 
-class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with WidgetsBindingObserver {
+class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
+    with WidgetsBindingObserver {
   final MobileScannerController controller = MobileScannerController();
   // Evita múltiplos pops caso onDetect dispare várias vezes
   bool _isHandlingResult = false;
@@ -91,9 +92,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
                 const SizedBox(height: 12),
                 const Text(
                   'Aponte o código para dentro da moldura',
-                  style: TextStyle(color: Colors.white, shadows: [
-                    Shadow(color: Colors.black, blurRadius: 4)
-                  ]),
+                  style: TextStyle(
+                    color: Colors.white,
+                    shadows: [Shadow(color: Colors.black, blurRadius: 4)],
+                  ),
                 ),
               ],
             ),
