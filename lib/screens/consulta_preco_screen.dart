@@ -71,7 +71,8 @@ class _ConsultaPrecoScreenState extends State<ConsultaPrecoScreen> {
 
   void _enviarParaEtiqueta() {
     if (_produtoEncontrado != null) {
-      Navigator.pushNamed(context, '/etiqueta', arguments: _produtoEncontrado);
+      final navigator = Navigator.of(context);
+      navigator.pushNamed('/etiqueta', arguments: _produtoEncontrado);
     }
   }
 

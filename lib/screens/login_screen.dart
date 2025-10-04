@@ -34,7 +34,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _goToConfig() {
-    Navigator.of(context).pushReplacementNamed('/config', arguments: 'login');
+    final navigator = Navigator.of(context);
+    navigator.pushReplacementNamed('/config', arguments: 'login');
   }
 
   @override

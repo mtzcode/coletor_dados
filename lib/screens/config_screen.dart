@@ -319,14 +319,13 @@ class _ConfigScreenState extends State<ConfigScreen> {
                           Expanded(
                             child: ElevatedButton(
                               onPressed: () {
+                                final navigator = Navigator.of(context);
                                 if (widget.fromScreen == 'home') {
                                   // Se veio da tela principal, volta para ela
-                                  Navigator.of(
-                                    context,
-                                  ).pushReplacementNamed('/home');
+                                  navigator.pushReplacementNamed('/home');
                                 } else {
                                   // Se veio da tela de login, apenas pop
-                                  Navigator.of(context).pop();
+                                  navigator.pop();
                                 }
                               },
                               style: ElevatedButton.styleFrom(

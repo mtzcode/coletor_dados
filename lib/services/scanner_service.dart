@@ -1,8 +1,8 @@
+import 'package:coletor_dados/services/feedback_service.dart';
 import 'package:coletor_dados/services/logger_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:coletor_dados/services/feedback_service.dart';
 
 class ScannerService {
   static Future<String?> scanBarcode(BuildContext context) async {
@@ -49,7 +49,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       appBar: AppBar(
         title: const Text('Scanner de Código de Barras'),
         backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
         actions: [
           // Botão do flash
           IconButton(
@@ -92,7 +91,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
               _isHandlingResult = true;
               controller.stop();
               if (mounted) {
-                Navigator.of(context).pop(null);
+                Navigator.of(context).pop();
               }
             },
             icon: const Icon(Icons.close, color: Colors.white),
@@ -122,7 +121,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                   'Aponte o código para dentro da moldura',
                   style: TextStyle(
                     color: Colors.white,
-                    shadows: [Shadow(color: Colors.black, blurRadius: 4)],
+                    shadows: [Shadow(blurRadius: 4)],
                   ),
                 ),
               ],
@@ -137,8 +136,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
+                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                     ),
                     SizedBox(height: 16),
                     Text(
                       'Processando código...',

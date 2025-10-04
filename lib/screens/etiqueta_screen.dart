@@ -120,7 +120,8 @@ class _EtiquetaScreenState extends State<EtiquetaScreen> {
   Future<void> _carregarEtiquetasSalvas() async {
     try {
       final etiquetasSalvas = await StorageService.loadEtiquetas();
-      if (mounted && etiquetasSalvas.isNotEmpty) {
+      if (!mounted) return;
+      if (etiquetasSalvas.isNotEmpty) {
         setState(() {
           _produtosPesquisados.addAll(etiquetasSalvas);
           // Atualiza o contador para o próximo item

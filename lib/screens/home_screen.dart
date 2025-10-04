@@ -14,23 +14,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _abrirEtiqueta() {
-    Navigator.pushNamed(context, '/etiqueta');
+    final navigator = Navigator.of(context);
+    navigator.pushNamed('/etiqueta');
   }
 
   void _abrirConsultaPreco() {
-    Navigator.pushNamed(context, '/consulta');
+    final navigator = Navigator.of(context);
+    navigator.pushNamed('/consulta');
   }
 
   void _abrirInventario() {
-    Navigator.pushNamed(context, '/inventario');
+    final navigator = Navigator.of(context);
+    navigator.pushNamed('/inventario');
   }
 
   void _abrirEntrada() {
-    Navigator.pushNamed(context, '/entrada');
+    final navigator = Navigator.of(context);
+    navigator.pushNamed('/entrada');
   }
 
   void _irParaConfiguracoes() {
-    Navigator.pushNamed(context, '/config', arguments: 'home');
+    final navigator = Navigator.of(context);
+    navigator.pushNamed('/config', arguments: 'home');
   }
 
   @override

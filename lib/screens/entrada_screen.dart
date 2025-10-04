@@ -49,6 +49,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
     try {
       final itensSalvos = await StorageService.loadEntradaItens();
       if (itensSalvos.isNotEmpty) {
+        if (!mounted) return;
         setState(() {
           _itensEntrada.addAll(itensSalvos);
           // Atualiza o contador para o próximo item
@@ -163,6 +164,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
     });
     // Salva automaticamente os itens
     await _salvarItensEntrada();
+    if (!mounted) return;
     _showMessage('Item removido da entrada');
   }
 

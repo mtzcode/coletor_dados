@@ -49,6 +49,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
     try {
       final itensSalvos = await StorageService.loadInventarioItens();
       if (itensSalvos.isNotEmpty) {
+        if (!mounted) return;
         setState(() {
           _itensInventario.addAll(itensSalvos);
           // Atualiza o contador para o próximo item
