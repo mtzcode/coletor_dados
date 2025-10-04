@@ -57,6 +57,18 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
             onPressed: () => controller.switchCamera(),
             icon: const Icon(Icons.camera_rear, color: Colors.white),
           ),
+          // Botão cancelar
+          IconButton(
+            onPressed: () {
+              _isHandlingResult = true;
+              controller.stop();
+              if (mounted) {
+                Navigator.of(context).pop(null);
+              }
+            },
+            icon: const Icon(Icons.close, color: Colors.white),
+            tooltip: 'Cancelar',
+          ),
         ],
       ),
       body: Stack(
