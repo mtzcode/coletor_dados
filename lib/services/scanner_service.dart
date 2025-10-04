@@ -2,6 +2,7 @@ import 'package:coletor_dados/services/logger_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:coletor_dados/services/feedback_service.dart';
 
 class ScannerService {
   static Future<String?> scanBarcode(BuildContext context) async {
@@ -53,10 +54,17 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
           // Botão do flash
           IconButton(
             onPressed: () async {
-              await controller.toggleTorch();
-              setState(() {
-                _torchOn = !_torchOn;
-              });
+              try {
+                await controller.toggleTorch();
+                setState(() {
+                  _torchOn = !_torchOn;
+                });
+              } catch (e) {
+                _showMessage('Não foi possível alternar o flash.');
+                LoggerService.e(
+                  'BarcodeScannerScreen: Erro ao alternar flash: $e',
+                );
+              }
             },
             icon: Icon(
               _torchOn ? Icons.flash_on : Icons.flash_off,
@@ -66,7 +74,16 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
           ),
           // Botão para trocar câmera
           IconButton(
-            onPressed: () => controller.switchCamera(),
+            onPressed: () async {
+              try {
+                await controller.switchCamera();
+              } catch (e) {
+                _showMessage('Não foi possível trocar a câmera.');
+                LoggerService.e(
+                  'BarcodeScannerScreen: Erro ao trocar câmera: $e',
+                );
+              }
+            },
             icon: const Icon(Icons.camera_rear, color: Colors.white),
           ),
           // Botão cancelar
@@ -136,6 +153,15 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     );
   }
 
+  void _showMessage(String message) {
+    if (!mounted) return;
+    FeedbackService.showSnack(
+      context,
+      message,
+      type: FeedbackService.classifyMessage(message),
+    );
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!mounted) return;
@@ -186,21 +212,38 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     // Feedback háptico antes de fechar
     HapticFeedback.selectionClick();
 
-    // Para a câmera antes de fechar a tela para evitar erros de Surface/Buffer
+    // Para a câmera enquanto processa
     controller.stop();
 
-    if (!mounted) {
-      LoggerService.d(
-        'BarcodeScannerScreen: Widget não montado, abortando pop.',
-      );
-      return;
-    }
+    try {
+      if (!mounted) {
+        LoggerService.d(
+          'BarcodeScannerScreen: Widget não montado, abortando pop.',
+        );
+        // Retoma leitura se ainda estiver na tela
+        setState(() {
+          _isHandlingResult = false;
+        });
+        controller.start();
+        return;
+      }
 
-    LoggerService.d(
-      'BarcodeScannerScreen: Fechando scanner e retornando código...',
-    );
-    Navigator.of(context).pop(code);
-    LoggerService.d('BarcodeScannerScreen: Navigator.pop executado');
+      LoggerService.d(
+        'BarcodeScannerScreen: Fechando scanner e retornando código...',
+      );
+      Navigator.of(context).pop(code);
+      LoggerService.d('BarcodeScannerScreen: Navigator.pop executado');
+    } catch (e) {
+      LoggerService.e('BarcodeScannerScreen: Erro ao processar código: $e');
+      _showMessage('Erro ao processar código. Tente novamente.');
+      // Retomar leitura
+      if (mounted) {
+        setState(() {
+          _isHandlingResult = false;
+        });
+        controller.start();
+      }
+    }
   }
 
   @override
