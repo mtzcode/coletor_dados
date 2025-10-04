@@ -517,9 +517,7 @@ class ApiService {
     }
     try {
       LoggerService.d('Enviando inventário com ${itens.length} itens...');
-      final inventarioRequest = InventarioRequest(
-        itens: itens,
-      );
+      final inventarioRequest = InventarioRequest(itens: itens);
       final url = Uri.parse('$_baseUrl/coletor');
       LoggerService.d('URL do inventário: $url');
       final body = jsonEncode(inventarioRequest.toJson());
@@ -550,10 +548,7 @@ class ApiService {
     }
     try {
       LoggerService.d('Enviando entrada com ${itens.length} itens...');
-      final entradaRequest = InventarioRequest(
-        coleta: 'ENTRADA',
-        itens: itens,
-      );
+      final entradaRequest = InventarioRequest(coleta: 'ENTRADA', itens: itens);
       final url = Uri.parse('$_baseUrl/coletor');
       LoggerService.d('URL da entrada: $url');
       final body = jsonEncode(entradaRequest.toJson());

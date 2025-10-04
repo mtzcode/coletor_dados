@@ -53,7 +53,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.inventory_2, size: 64, color: Colors.blue),
+                      const Icon(
+                        Icons.inventory_2,
+                        size: 64,
+                        color: Colors.blue,
+                      ),
                       const SizedBox(height: 16),
                       const Text(
                         'Coletor de Dados',
