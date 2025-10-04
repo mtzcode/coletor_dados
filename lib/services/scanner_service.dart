@@ -33,6 +33,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
   final MobileScannerController controller = MobileScannerController();
   // Evita múltiplos pops caso onDetect dispare várias vezes
   bool _isHandlingResult = false;
+  // Estado do flash para refletir no ícone e tooltip
+  bool _torchOn = false;
 
   @override
   void initState() {
@@ -50,8 +52,17 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
         actions: [
           // Botão do flash
           IconButton(
-            onPressed: () => controller.toggleTorch(),
-            icon: const Icon(Icons.flash_on, color: Colors.white),
+            onPressed: () async {
+              await controller.toggleTorch();
+              setState(() {
+                _torchOn = !_torchOn;
+              });
+            },
+            icon: Icon(
+              _torchOn ? Icons.flash_on : Icons.flash_off,
+              color: Colors.white,
+            ),
+            tooltip: _torchOn ? 'Desligar flash' : 'Ligar flash',
           ),
           // Botão para trocar câmera
           IconButton(
