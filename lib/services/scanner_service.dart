@@ -74,6 +74,31 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
       body: Stack(
         children: [
           MobileScanner(controller: controller, onDetect: _foundBarcode),
+
+          // Moldura de orientação
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: MediaQuery.of(context).size.width * 0.75,
+                  height: MediaQuery.of(context).size.width * 0.45,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white, width: 3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Aponte o código para dentro da moldura',
+                  style: TextStyle(color: Colors.white, shadows: [
+                    Shadow(color: Colors.black, blurRadius: 4)
+                  ]),
+                ),
+              ],
+            ),
+          ),
+
           if (_isHandlingResult)
             Positioned.fill(
               child: Container(
