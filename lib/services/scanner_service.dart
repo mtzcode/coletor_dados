@@ -1,5 +1,6 @@
 import 'package:coletor_dados/services/logger_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 class ScannerService {
@@ -131,6 +132,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
       _isHandlingResult = true;
     });
     LoggerService.d('BarcodeScannerScreen: Código detectado: $code');
+
+    // Feedback háptico antes de fechar
+    HapticFeedback.selectionClick();
 
     // Para a câmera antes de fechar a tela para evitar erros de Surface/Buffer
     controller.stop();
