@@ -27,10 +27,16 @@ class BarcodeScannerScreen extends StatefulWidget {
   State<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
 }
 
-class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
+class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with WidgetsBindingObserver {
   final MobileScannerController controller = MobileScannerController();
   // Evita múltiplos pops caso onDetect dispare várias vezes
   bool _isHandlingResult = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +85,29 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     );
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
+
+    if (_isHandlingResult) {
+      controller.stop();
+      return;
+    }
+
+    switch (state) {
+      case AppLifecycleState.resumed:
+        controller.start();
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        controller.stop();
+        break;
+      case AppLifecycleState.detached:
+        break;
+    }
+  }
+
   void _foundBarcode(BarcodeCapture capture) {
     if (_isHandlingResult) {
       LoggerService.d(
@@ -122,6 +151,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     controller.dispose();
     super.dispose();
   }
