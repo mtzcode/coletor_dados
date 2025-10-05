@@ -92,7 +92,7 @@ class MyApp extends StatelessWidget {
             case '/entrada':
               return MaterialPageRoute(builder: (_) => const EntradaScreen());
             case '/scanner':
-              return MaterialPageRoute(
+              return MaterialPageRoute<String>(
                 builder: (_) => const BarcodeScannerScreen(),
               );
             case '/inventario-update':
