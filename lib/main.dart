@@ -1,3 +1,4 @@
+import 'package:coletor_dados/models/inventario_item.dart';
 import 'package:coletor_dados/models/produto.dart';
 import 'package:coletor_dados/providers/config_provider.dart';
 import 'package:coletor_dados/screens/config_screen.dart';
@@ -97,7 +98,7 @@ class MyApp extends StatelessWidget {
               );
             case '/inventario-update':
               final produto = settings.arguments as Produto;
-              return MaterialPageRoute(
+              return MaterialPageRoute<InventarioItem>(
                 builder: (_) => InventarioUpdateScreen(produto: produto),
               );
             default:
