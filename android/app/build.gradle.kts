@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -6,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.coletor_dados"
+    namespace = "com.mtzcode.nymbuscoletor"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +23,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.coletor_dados"
+        applicationId = "com.mtzcode.nymbuscoletor"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -30,11 +32,45 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            val keystoreRoot = rootProject.file("key.properties")
+            val keystoreAndroid = rootProject.file("android/key.properties")
+            val keystorePropertiesFile = if (keystoreRoot.exists()) keystoreRoot else keystoreAndroid
+            if (keystorePropertiesFile.exists()) {
+                val keystoreProperties = Properties()
+                keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+                val storePath = keystoreProperties.getProperty("storeFile") ?: ""
+                val resolvedStoreFile = if (storePath.startsWith("app/") || storePath.startsWith("app\\")) {
+                    // Se o caminho vier como "app/release.keystore" (CI), resolva relativo ao rootProject ("android/")
+                    rootProject.file(storePath)
+                } else {
+                    // Caso contrário, resolva relativo ao módulo app
+                    file(storePath)
+                }
+                storeFile = resolvedStoreFile
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            } else {
+                // Fallback: usa debug keystore para permitir build release local
+                storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
+                storePassword = "android"
+                keyAlias = "AndroidDebugKey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            isShrinkResources = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

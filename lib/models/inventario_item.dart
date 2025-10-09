@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:nymbus_coletor/utils/barcode_utils.dart';
 
 class InventarioItem {
   final int item;
@@ -30,9 +31,7 @@ class InventarioItem {
   Map<String, dynamic> toJson() {
     return {
       'codigo': codigo,
-      'barras': barras
-          .replaceAll(RegExp(r'[\s\r\n\t]'), '')
-          .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), ''),
+      'barras': BarcodeUtils.sanitize(barras),
       'produto': produto,
       'un': unidade,
       'qtd': novoEstoque,
@@ -46,10 +45,7 @@ class InventarioItem {
     return InventarioItem(
       item: itemNumber,
       codigo: json['codigo'] ?? 0,
-      barras: (json['barras'] ?? '')
-          .toString()
-          .replaceAll(RegExp(r'[\s\r\n\t]'), '')
-          .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), ''),
+      barras: BarcodeUtils.sanitize((json['barras'] ?? '').toString()),
       produto: json['produto'] ?? '',
       unidade: json['un'] ?? '',
       estoqueAtual: (json['estoque_atual'] ?? 0.0).toDouble(),
@@ -81,6 +77,19 @@ class InventarioItem {
       novoEstoque: novoEstoque ?? this.novoEstoque,
       dtCriacao: dtCriacao ?? this.dtCriacao,
     );
+  }
+
+  // Validação sistemática do modelo
+  List<String> validate() {
+    final errors = <String>[];
+    final b = BarcodeUtils.sanitize(barras);
+    if (b.isEmpty) errors.add('barras vazio ou inválido');
+    if (item <= 0) errors.add('item inválido');
+    if (codigo <= 0) errors.add('código inválido');
+    if (produto.trim().isEmpty) errors.add('produto vazio');
+    if (unidade.trim().isEmpty) errors.add('unidade vazia');
+    if (novoEstoque < 0) errors.add('novoEstoque negativo');
+    return errors;
   }
 
   @override

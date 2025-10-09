@@ -57,7 +57,7 @@ class LoggerService {
     var s = url;
     // Mascara caminhos do tipo /licenca/<digits>
     s = s.replaceAllMapped(
-      RegExp(r'(/licenca/)(\\d+)', caseSensitive: false),
+      RegExp(r'(/licenca/)(\d+)', caseSensitive: false),
       (m) {
         final digits = m.group(2)!;
         final masked = maskLicense(digits);
@@ -85,26 +85,26 @@ class LoggerService {
     var s = message;
     // Redação de URLs
     s = s.replaceAllMapped(
-      RegExp(r'(https?://[^\\s]+)', caseSensitive: false),
+      RegExp(r'(https?://[^\s]+)', caseSensitive: false),
       (m) => redactUrl(m.group(0)!),
     );
 
     // Redação de cabeçalho Authorization: Bearer <token>
     s = s.replaceAllMapped(
-      RegExp(r'(Authorization\\s*:\\s*Bearer\\s+)([A-Za-z0-9._-]+)', caseSensitive: false),
+      RegExp(r'(Authorization\s*:\s*Bearer\s+)([A-Za-z0-9._-]+)', caseSensitive: false),
       (m) => '${m.group(1)}***',
     );
 
     // Se a mensagem sugere conteúdo de código de barras, mascarar sequências numéricas longas
-    final mentionsBarcode = RegExp(r'(?i)(c[oó]digo(?:\\s*de\\s*barras)?|cod_barras|barcode|ean)').hasMatch(s);
+    final mentionsBarcode = RegExp(r'(c[oó]digo(?:\s*de\s*barras)?|cod_barras|barcode|ean)', caseSensitive: false).hasMatch(s);
     if (mentionsBarcode) {
-      s = s.replaceAllMapped(RegExp(r'(\\d{8,})'), (m) => maskBarcode(m.group(1)!));
+      s = s.replaceAllMapped(RegExp(r'(\d{8,})'), (m) => maskBarcode(m.group(1)!));
     }
 
     // Se a mensagem sugere licença, mascarar sequências curtas numéricas
-    final mentionsLicense = RegExp(r'(?i)(licenca|license)').hasMatch(s);
+    final mentionsLicense = RegExp(r'(licenca|license)', caseSensitive: false).hasMatch(s);
     if (mentionsLicense) {
-      s = s.replaceAllMapped(RegExp(r'(\\b\\d{3,}\\b)'), (m) => maskLicense(m.group(1)!));
+      s = s.replaceAllMapped(RegExp(r'(\b\d{3,}\b)'), (m) => maskLicense(m.group(1)!));
     }
 
     return s;

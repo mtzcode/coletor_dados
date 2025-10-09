@@ -1,6 +1,6 @@
 {
-    "name": "coletor_dados",
-    "short_name": "coletor_dados",
+    "name": "Nymbus - Coletor",
+    "short_name": "Nymbus Coletor",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

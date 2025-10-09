@@ -1,3 +1,5 @@
+import 'package:nymbus_coletor/services/license_service.dart';
+
 class Licenca {
   final String codigo;
   final String usuarioAparelho;
@@ -34,6 +36,21 @@ class Licenca {
       usuarioAparelho: json['usuario_aparelho'] ?? '',
       valida: json['valida'] ?? false,
     );
+  }
+
+  // Validação sistemática da licença
+  List<String> validate() {
+    final errors = <String>[];
+    final cod = codigo.trim();
+    if (cod.isEmpty) {
+      errors.add('codigo vazio');
+    } else if (!LicenseService.isValidLicenseFormat(cod)) {
+      errors.add('código de licença inválido');
+    }
+    if (usuarioAparelho.trim().isEmpty) {
+      errors.add('usuarioAparelho vazio');
+    }
+    return errors;
   }
 
   @override

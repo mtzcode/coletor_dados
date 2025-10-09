@@ -1,6 +1,6 @@
-import 'package:coletor_dados/providers/config_provider.dart';
-import 'package:coletor_dados/services/feedback_service.dart';
 import 'package:flutter/material.dart';
+import 'package:nymbus_coletor/providers/config_provider.dart';
+import 'package:nymbus_coletor/services/feedback_service.dart';
 import 'package:provider/provider.dart';
 
 class ConfigScreen extends StatefulWidget {
@@ -28,9 +28,12 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   void _loadCurrentConfig() {
-    final config = Provider.of<ConfigProvider>(context, listen: false).config;
+    final configProvider = Provider.of<ConfigProvider>(context, listen: false);
+    final config = configProvider.config;
     _enderecoController.text = config.endereco;
     _portaController.text = config.porta;
+    // Mantém o status visual como conectado se o app já estiver configurado
+    _isConnected = configProvider.isConfigured;
   }
 
   @override
@@ -160,259 +163,263 @@ class _ConfigScreenState extends State<ConfigScreen> {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
-      body: Consumer<ConfigProvider>(
-        builder: (context, configProvider, child) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.key, color: Colors.blue),
-                              SizedBox(width: 8),
-                              Text(
-                                'Licença (gerada automaticamente)',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey[300]!),
-                            ),
-                            child: Text(
-                              configProvider.config.licenca,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: _enderecoController,
-                    decoration: const InputDecoration(
-                      labelText: 'Endereço (IP ou DDNS)',
-                      prefixIcon: Icon(Icons.language),
-                      border: OutlineInputBorder(),
-                      hintText: 'Ex: 192.168.1.100',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Por favor, informe o endereço';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _portaController,
-                    decoration: const InputDecoration(
-                      labelText: 'Porta',
-                      prefixIcon: Icon(Icons.settings_ethernet),
-                      border: OutlineInputBorder(),
-                      hintText: 'Ex: 8787',
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Por favor, informe a porta';
-                      }
-                      final port = int.tryParse(value.trim());
-                      if (port == null || port < 1 || port > 65535) {
-                        return 'Porta deve ser um número entre 1 e 65535';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Indicador de status de conexão
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _isConnected ? Icons.wifi : Icons.wifi_off,
-                        color: _isConnected ? Colors.green : Colors.grey,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _isConnected ? 'Conectado' : 'Desconectado',
-                        style: TextStyle(
-                          color: _isConnected ? Colors.green : Colors.grey,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  if (_validationMessage != null)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: _validationMessage!.contains('✓')
-                            ? Colors.green[50]
-                            : Colors.red[50],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: _validationMessage!.contains('✓')
-                              ? Colors.green
-                              : Colors.red,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            _validationMessage!.contains('✓')
-                                ? Icons.check_circle
-                                : Icons.error,
-                            color: _validationMessage!.contains('✓')
-                                ? Colors.green
-                                : Colors.red,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _validationMessage!,
-                              style: TextStyle(
-                                color: _validationMessage!.contains('✓')
-                                    ? Colors.green[800]
-                                    : Colors.red[800],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  // Botões
-                  Column(
-                    children: [
-                      // Primeira linha: Voltar e Sincronizar
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                final navigator = Navigator.of(context);
-                                if (widget.fromScreen == 'home') {
-                                  // Se veio da tela principal, volta para ela
-                                  navigator.pushReplacementNamed('/home');
-                                } else {
-                                  // Se veio da tela de login, apenas pop
-                                  navigator.pop();
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                              ),
-                              child: const Text('Voltar'),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: _isSyncing ? null : _syncConfiguration,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                              ),
-                              child: _isSyncing
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
-                                      ),
-                                    )
-                                  : const Text('Sincronizar'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Segunda linha: Botão Salvar (só ativo se conectado)
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isConnected ? _saveAndNavigate : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _isConnected
-                                ? Colors.green
-                                : Colors.grey,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          child: const Text('Salvar e Continuar'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (configProvider.errorMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red[50],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red),
-                        ),
-                        child: Row(
+      body: SafeArea(
+        child: Consumer<ConfigProvider>(
+          builder: (context, configProvider, child) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.error, color: Colors.red),
-                            const SizedBox(width: 8),
-                            Expanded(
+                            const Row(
+                              children: [
+                                Icon(Icons.key, color: Colors.blue),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Licença (gerada automaticamente)',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey[300]!),
+                              ),
                               child: Text(
-                                configProvider.errorMessage!,
-                                style: TextStyle(color: Colors.red[800]),
+                                configProvider.config.licenca,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                ],
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _enderecoController,
+                      decoration: const InputDecoration(
+                        labelText: 'Endereço (IP ou DDNS)',
+                        prefixIcon: Icon(Icons.language),
+                        border: OutlineInputBorder(),
+                        hintText: 'Ex: 192.168.1.100',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Por favor, informe o endereço';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _portaController,
+                      decoration: const InputDecoration(
+                        labelText: 'Porta',
+                        prefixIcon: Icon(Icons.settings_ethernet),
+                        border: OutlineInputBorder(),
+                        hintText: 'Ex: 8787',
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Por favor, informe a porta';
+                        }
+                        final port = int.tryParse(value.trim());
+                        if (port == null || port < 1 || port > 65535) {
+                          return 'Porta deve ser um número entre 1 e 65535';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Indicador de status de conexão
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _isConnected ? Icons.wifi : Icons.wifi_off,
+                          color: _isConnected ? Colors.green : Colors.grey,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _isConnected ? 'Conectado' : 'Desconectado',
+                          style: TextStyle(
+                            color: _isConnected ? Colors.green : Colors.grey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    if (_validationMessage != null)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: _validationMessage!.contains('✓')
+                              ? Colors.green[50]
+                              : Colors.red[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _validationMessage!.contains('✓')
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _validationMessage!.contains('✓')
+                                  ? Icons.check_circle
+                                  : Icons.error,
+                              color: _validationMessage!.contains('✓')
+                                  ? Colors.green
+                                  : Colors.red,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _validationMessage!,
+                                style: TextStyle(
+                                  color: _validationMessage!.contains('✓')
+                                      ? Colors.green[800]
+                                      : Colors.red[800],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // BotÃões
+                    Column(
+                      children: [
+                        // Primeira linha: Voltar e Sincronizar
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  final navigator = Navigator.of(context);
+                                  if (widget.fromScreen == 'home') {
+                                    // Se veio da tela principal, volta para ela
+                                    navigator.pushReplacementNamed('/home');
+                                  } else {
+                                    // Se veio da tela de login ou splash, vai para login em vez de dar pop
+                                    navigator.pushReplacementNamed('/login');
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.grey,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                                child: const Text('Voltar'),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: _isSyncing
+                                    ? null
+                                    : _syncConfiguration,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                                child: _isSyncing
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                    : const Text('Sincronizar'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // Segunda linha: Botão Salvar (só ativo se conectado)
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isConnected ? _saveAndNavigate : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _isConnected
+                                  ? Colors.green
+                                  : Colors.grey,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: const Text('Salvar e Continuar'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (configProvider.errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.red),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error, color: Colors.red),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  configProvider.errorMessage!,
+                                  style: TextStyle(color: Colors.red[800]),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

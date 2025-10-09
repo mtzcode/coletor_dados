@@ -76,4 +76,35 @@ class FeedbackService {
         return Colors.blueGrey.shade600;
     }
   }
+
+  // Alerta didático para orientar o usuário a validar a conexão
+  static Future<void> showConfigRequiredDialog(BuildContext context) async {
+    return showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Conexão não validada'),
+        content: const Text(
+          'Para usar esta função, valide a conexão nas Configurações:\n\n'
+          '1) Informe o endereço e a porta do servidor\n'
+          '2) Toque em Sincronizar e valide sua licença\n\n'
+          'Você pode fazer isso agora tocando no botão abaixo.'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              final navigator = Navigator.of(context);
+              navigator.pushNamed('/config', arguments: 'home');
+            },
+            icon: const Icon(Icons.settings),
+            label: const Text('Ir para Configurações'),
+          ),
+        ],
+      ),
+    );
+  }
 }

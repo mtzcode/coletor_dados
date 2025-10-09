@@ -1,8 +1,8 @@
-import 'package:coletor_dados/models/app_config.dart';
-import 'package:coletor_dados/services/api_service.dart';
-import 'package:coletor_dados/services/license_service.dart';
-import 'package:coletor_dados/services/storage_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:nymbus_coletor/models/app_config.dart';
+import 'package:nymbus_coletor/services/api_service.dart';
+
+import 'package:nymbus_coletor/services/storage_service.dart';
 
 class ConfigProvider extends ChangeNotifier {
   AppConfig _config = AppConfig.empty();
@@ -19,16 +19,17 @@ class ConfigProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       final savedConfig = await StorageService.loadConfig();
-      if (savedConfig != null) {
-        _config = savedConfig;
-        // Configura a API se os dados estão disponíveis
-        if (_config.endereco.isNotEmpty && _config.porta.isNotEmpty) {
-          final baseUrl = 'http://${_config.endereco}:${_config.porta}/api';
-          ApiService.instance.configure(baseUrl);
-        }
-      } else {
-        // Se não há configuração, gera uma licença automaticamente
-        _config = _config.copyWith(licenca: LicenseService.generateLicense());
+      // Usa configuração salva ou começa vazia
+      _config = savedConfig ?? AppConfig.empty();
+
+      // Licença persistente: carrega do secure storage ou cria e persiste se não existir
+      final persistentLicense = await StorageService.loadOrCreateLicense();
+      _config = _config.copyWith(licenca: persistentLicense);
+
+      // Configura a API se os dados estão disponíveis
+      if (_config.endereco.isNotEmpty && _config.porta.isNotEmpty) {
+        final baseUrl = 'http://${_config.endereco}:${_config.porta}/api';
+        ApiService.instance.configure(baseUrl);
       }
       _clearError();
     } catch (e) {
@@ -98,7 +99,7 @@ class ConfigProvider extends ChangeNotifier {
     }
   }
 
-  /// Valida a licença com o servidor
+  /// Valida a licenÃ§a com o servidor
   Future<bool> validarLicenca() async {
     if (_config.licenca.isEmpty) {
       _setError('Licença não definida');
@@ -124,7 +125,7 @@ class ConfigProvider extends ChangeNotifier {
     }
   }
 
-  /// Sincroniza configuração (testa conectividade e valida licença)
+  /// Sincroniza configuraÃ§Ã£o (testa conectividade e valida licenÃ§a)
   Future<bool> sincronizar() async {
     _setLoading(true);
     try {
@@ -159,7 +160,7 @@ class ConfigProvider extends ChangeNotifier {
     }
   }
 
-  /// Limpa a configuração
+  /// Limpa a configuraÃ§Ã£o
   Future<void> clearConfig() async {
     await StorageService.clearConfig();
     _config = AppConfig.empty();

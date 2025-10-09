@@ -1,8 +1,10 @@
-import 'package:coletor_dados/models/produto.dart';
-import 'package:coletor_dados/services/api_service.dart';
-import 'package:coletor_dados/services/feedback_service.dart';
-import 'package:coletor_dados/services/scanner_service.dart';
 import 'package:flutter/material.dart';
+import 'package:nymbus_coletor/models/produto.dart';
+import 'package:nymbus_coletor/providers/config_provider.dart';
+import 'package:nymbus_coletor/services/api_service.dart';
+import 'package:nymbus_coletor/services/feedback_service.dart';
+import 'package:nymbus_coletor/services/scanner_service.dart';
+import 'package:provider/provider.dart';
 
 class ConsultaPrecoScreen extends StatefulWidget {
   const ConsultaPrecoScreen({super.key});
@@ -24,7 +26,8 @@ class _ConsultaPrecoScreenState extends State<ConsultaPrecoScreen> {
 
   Future<void> _abrirScanner() async {
     try {
-      final codigo = await ScannerService.scanBarcode(context);
+      final ctx = context;
+      final codigo = await ScannerService.scanBarcode(ctx);
       if (!mounted) return;
       if (codigo != null && codigo.isNotEmpty) {
         _codigoController.text = codigo;
@@ -43,6 +46,14 @@ class _ConsultaPrecoScreenState extends State<ConsultaPrecoScreen> {
       _showMessage('Digite um código para consultar');
       return;
     }
+
+    // Guarda de configuração/licença
+    final configProvider = Provider.of<ConfigProvider>(context, listen: false);
+    if (!configProvider.isConfigured || configProvider.config.licenca.isEmpty) {
+      await FeedbackService.showConfigRequiredDialog(context);
+      return;
+    }
+
     setState(() {
       _isSearching = true;
     });
@@ -93,180 +104,195 @@ class _ConsultaPrecoScreenState extends State<ConsultaPrecoScreen> {
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Campo de pesquisa
-            Card(
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    // Texto de orientação
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: const Text(
-                        'Digite o código ou use a câmera para escanear',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    TextField(
-                      controller: _codigoController,
-                      decoration: InputDecoration(
-                        labelText: 'Código do Produto',
-                        hintText: 'Digite o código ou código de barras',
-                        prefixIcon: IconButton(
-                          icon: const Icon(Icons.camera_alt),
-                          onPressed: _abrirScanner,
-                          tooltip: 'Escanear código de barras',
-                        ),
-                        border: const OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      onSubmitted: (_) => _consultarProduto(),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _isSearching ? null : _consultarProduto,
-                        icon: _isSearching
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.search),
-                        label: Text(
-                          _isSearching ? 'Consultando...' : 'Consultar',
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Resultado da consulta
-            if (_produtoEncontrado != null) ...[
-              Expanded(
-                child: Card(
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Informações do Produto',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        Expanded(
-                          child: SingleChildScrollView(
-                            child: Column(
-                              children: [
-                                _buildInfoRow(
-                                  'Código do Produto',
-                                  _produtoEncontrado!.codProduto,
-                                ),
-                                _buildInfoRow(
-                                  'Código de Barras',
-                                  _produtoEncontrado!.codBarras,
-                                ),
-                                _buildInfoRow(
-                                  'Produto',
-                                  _produtoEncontrado!.produto,
-                                ),
-                                _buildInfoRow(
-                                  'Unidade',
-                                  _produtoEncontrado!.unidade,
-                                ),
-                                _buildInfoRow(
-                                  'Valor de Venda',
-                                  _produtoEncontrado!.precoFormatado,
-                                ),
-                                _buildInfoRow(
-                                  'Qtd. Estoque',
-                                  _produtoEncontrado!.qtdEstoqueFormatada,
-                                ),
-                                _buildInfoRow(
-                                  'Data Atualização',
-                                  _produtoEncontrado!.dataAtualizacaoFormatada,
-                                ),
-                                _buildInfoRow(
-                                  'Data/Hora Consulta',
-                                  _produtoEncontrado!.dataHoraFormatada,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Botão enviar para etiqueta
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _enviarParaEtiqueta,
-                            icon: const Icon(Icons.label),
-                            label: const Text('Enviar para Etiqueta'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ] else if (!_isSearching) ...[
-              const Expanded(
-                child: Center(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Campo de pesquisa
+              Card(
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.search, size: 80, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text(
-                        'Digite um código para consultar',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      // Texto de orientação
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: const Text(
+                          'Digite o código ou use a câmera para escanear',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      TextField(
+                        controller: _codigoController,
+                        decoration: InputDecoration(
+                          labelText: 'Código do Produto',
+                          hintText: 'Digite o código ou código de barras',
+                          prefixIcon: IconButton(
+                            icon: const Icon(Icons.camera_alt),
+                            onPressed: _abrirScanner,
+                            tooltip: 'Escanear código de barras',
+                          ),
+                          border: const OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.number,
+                        onSubmitted: (_) => _consultarProduto(),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isSearching ? null : _consultarProduto,
+                          icon: _isSearching
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.search),
+                          label: Text(
+                            _isSearching ? 'Consultando...' : 'Consultar',
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
+
+              const SizedBox(height: 16),
+
+              // Resultado da consulta
+              if (_produtoEncontrado != null) ...[
+                Expanded(
+                  child: Card(
+                    elevation: 4,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Informações do Produto',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  _buildInfoRow(
+                                    'Código do Produto',
+                                    _produtoEncontrado!.codProduto,
+                                  ),
+                                  _buildInfoRow(
+                                    'Código de Barras',
+                                    _produtoEncontrado!.codBarras,
+                                  ),
+                                  _buildInfoRow(
+                                    'Produto',
+                                    _produtoEncontrado!.produto,
+                                  ),
+                                  _buildInfoRow(
+                                    'Unidade',
+                                    _produtoEncontrado!.unidade,
+                                  ),
+                                  _buildInfoRow(
+                                    'Valor de Venda',
+                                    _produtoEncontrado!.precoFormatado,
+                                  ),
+                                  _buildInfoRow(
+                                    'Qtd. Estoque',
+                                    _produtoEncontrado!.qtdEstoqueFormatada,
+                                  ),
+                                  _buildInfoRow(
+                                    'Data Atualização',
+                                    _produtoEncontrado!
+                                        .dataAtualizacaoFormatada,
+                                  ),
+                                  _buildInfoRow(
+                                    'Data/Hora Consulta',
+                                    _produtoEncontrado!.dataHoraFormatada,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Botão enviar para etiqueta movido para bottomNavigationBar
+                          const SizedBox.shrink(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ] else if (!_isSearching) ...[
+                const Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(16),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.search, size: 80, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text(
+                            'Digite um código para consultar',
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
+      bottomNavigationBar: _produtoEncontrado != null
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _enviarParaEtiqueta,
+                    icon: const Icon(Icons.label),
+                    label: const Text('Enviar para Etiqueta'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : null,
     );
   }
 

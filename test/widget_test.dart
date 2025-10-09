@@ -5,10 +5,10 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:coletor_dados/main.dart';
-import 'package:coletor_dados/providers/config_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nymbus_coletor/main.dart';
+import 'package:nymbus_coletor/providers/config_provider.dart';
 import 'package:provider/provider.dart';
 
 void main() {

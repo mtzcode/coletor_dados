@@ -1,4 +1,4 @@
-class AppConfig {
+﻿class AppConfig {
   final String endereco;
   final String porta;
   final String licenca;
@@ -11,14 +11,14 @@ class AppConfig {
     this.isConfigured = false,
   });
 
-  // Construtor para criar uma configuração vazia
+  // Construtor para criar uma configuraÃ§Ã£o vazia
   AppConfig.empty()
     : endereco = '',
       porta = '',
       licenca = '',
       isConfigured = false;
 
-  // Método para criar uma cópia com modificações
+  // MÃ©todo para criar uma cÃ³pia com modificaÃ§Ãµes
   AppConfig copyWith({
     String? endereco,
     String? porta,
@@ -33,7 +33,7 @@ class AppConfig {
     );
   }
 
-  // Conversão para Map (para armazenamento)
+  // ConversÃ£o para Map (para armazenamento)
   Map<String, dynamic> toMap() {
     return {
       'endereco': endereco,
@@ -43,7 +43,7 @@ class AppConfig {
     };
   }
 
-  // Criação a partir de Map (para recuperação)
+  // CriaÃ§Ã£o a partir de Map (para recuperaÃ§Ã£o)
   factory AppConfig.fromMap(Map<String, dynamic> map) {
     return AppConfig(
       endereco: map['endereco'] ?? '',

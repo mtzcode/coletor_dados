@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:coletor_dados/services/api_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:nymbus_coletor/services/api_service.dart';
 
 void main() {
   group('ApiService unit tests', () {
@@ -46,7 +46,7 @@ void main() {
       },
     );
 
-    test('Unauthorized handler é chamado em 401 (GET)', () async {
+    test('Unauthorized handler Ã© chamado em 401 (GET)', () async {
       bool unauthorizedCalled = false;
       ApiService.instance.setUnauthorizedHandler(() {
         unauthorizedCalled = true;
@@ -65,7 +65,7 @@ void main() {
     });
 
     test(
-      'Unauthorized handler é chamado em 403 (POST) e enviarDados retorna false',
+      'Unauthorized handler Ã© chamado em 403 (POST) e enviarDados retorna false',
       () async {
         bool unauthorizedCalled = false;
         ApiService.instance.setUnauthorizedHandler(() {
@@ -85,7 +85,7 @@ void main() {
       },
     );
 
-    test('buscarProdutoFV lança exceção em erro 500', () async {
+    test('buscarProdutoFV lanÃ§a exceÃ§Ã£o em erro 500', () async {
       final client = MockClient((request) async {
         if (request.method == 'GET' &&
             request.url.path.endsWith('/fv/produtos')) {
@@ -98,6 +98,84 @@ void main() {
         () => ApiService.instance.buscarProdutoFV('999'),
         throwsA(isA<Exception>()),
       );
+    });
+
+    test('Retry/backoff: GET falha por TimeoutException atÃ© estourar e rethrow', () async {
+      final client = MockClient((request) async {
+        if (request.method == 'GET' && request.url.path.endsWith('/etiquetas')) {
+          throw TimeoutException('timeout');
+        }
+        return http.Response('Not Found', 404);
+      });
+      ApiService.instance.setClient(client);
+      expect(
+        () => ApiService.instance.buscarTiposEtiquetas(),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('Unauthorized handler Ã© chamado em 401 (GET) em /etiquetas e mÃ©todo lanÃ§a exceÃ§Ã£o', () async {
+      bool unauthorizedCalled = false;
+      ApiService.instance.setUnauthorizedHandler(() {
+        unauthorizedCalled = true;
+      });
+      final client = MockClient((request) async {
+        if (request.method == 'GET' && request.url.path.endsWith('/etiquetas')) {
+          return http.Response('', 401);
+        }
+        return http.Response('Not Found', 404);
+      });
+      ApiService.instance.setClient(client);
+      await expectLater(
+        ApiService.instance.buscarTiposEtiquetas(),
+        throwsA(isA<Exception>()),
+      );
+      expect(unauthorizedCalled, isTrue);
+    });
+
+    test('Unauthorized handler Ã© chamado em 403 (GET) em /etiquetas e mÃ©todo lanÃ§a exceÃ§Ã£o', () async {
+      bool unauthorizedCalled = false;
+      ApiService.instance.setUnauthorizedHandler(() {
+        unauthorizedCalled = true;
+      });
+      final client = MockClient((request) async {
+        if (request.method == 'GET' && request.url.path.endsWith('/etiquetas')) {
+          return http.Response('', 403);
+        }
+        return http.Response('Not Found', 404);
+      });
+      ApiService.instance.setClient(client);
+      await expectLater(
+        ApiService.instance.buscarTiposEtiquetas(),
+        throwsA(isA<Exception>()),
+      );
+      expect(unauthorizedCalled, isTrue);
+    });
+
+    test('Retry/backoff: POST falha por ClientException atÃ© estourar e rethrow', () async {
+      final client = MockClient((request) async {
+        if (request.method == 'POST' && request.url.path.endsWith('/dados')) {
+          throw http.ClientException('client error');
+        }
+        return http.Response('Not Found', 404);
+      });
+      ApiService.instance.setClient(client);
+      expect(
+        () => ApiService.instance.enviarDados({'a': 1}),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('POST enviarDados retorna verdadeiro em 201', () async {
+      final client = MockClient((request) async {
+        if (request.method == 'POST' && request.url.path.endsWith('/dados')) {
+          return http.Response('', 201);
+        }
+        return http.Response('Not Found', 404);
+      });
+      ApiService.instance.setClient(client);
+      final ok = await ApiService.instance.enviarDados({'x': 2});
+      expect(ok, isTrue);
     });
   });
 }

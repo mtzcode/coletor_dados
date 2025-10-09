@@ -1,11 +1,11 @@
-import 'package:coletor_dados/models/produto.dart';
-import 'package:coletor_dados/providers/config_provider.dart';
-import 'package:coletor_dados/screens/consulta_preco_screen.dart';
-import 'package:coletor_dados/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:nymbus_coletor/models/produto.dart';
+import 'package:nymbus_coletor/providers/config_provider.dart';
+import 'package:nymbus_coletor/screens/consulta_preco_screen.dart';
+import 'package:nymbus_coletor/services/api_service.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -13,7 +13,7 @@ void main() {
 
   group('ConsultaPreco scanner flow', () {
     testWidgets(
-      'Fluxo: abre scanner, retorna código, consulta e permanece na tela',
+      'Fluxo: abre scanner, retorna cÃ³digo, consulta e permanece na tela',
       (tester) async {
         // Injeta MockClient para API
         ApiService.instance.configure('http://example.com/api');
@@ -49,7 +49,7 @@ void main() {
                       ),
                     );
                   case '/scanner':
-                    // Simula scanner: retorna imediatamente o código '123'
+                    // Simula scanner: retorna imediatamente o cÃ³digo '123'
                     return MaterialPageRoute(
                       builder: (context) {
                         Future.microtask(
@@ -69,7 +69,7 @@ void main() {
           ),
         );
 
-        // Digita o código manualmente e aciona consulta
+        // Digita o cÃ³digo manualmente e aciona consulta
         await tester.enterText(find.byType(TextField), '123');
         await tester.tap(find.text('Consultar'));
         await tester.pumpAndSettle();
@@ -84,7 +84,7 @@ void main() {
     );
 
     testWidgets(
-      'Tratamento de erro: ApiService lança exceção e SnackBar é exibido',
+      'Tratamento de erro: ApiService lanÃ§a exceÃ§Ã£o e SnackBar Ã© exibido',
       (tester) async {
         ApiService.instance.configure('http://example.com/api');
         ApiService.instance.setClient(
@@ -100,15 +100,15 @@ void main() {
           ),
         );
 
-        // Digita código e aciona consulta
+        // Digita cÃ³digo e aciona consulta
         await tester.enterText(find.byType(TextField), '123');
         await tester.tap(find.text('Consultar'));
         await tester.pump();
 
-        // Aguarda
-        await tester.pumpAndSettle();
+        // Pequeno pump para garantir que o SnackBar apareÃ§a
+        await tester.pump(const Duration(milliseconds: 300));
 
-        // SnackBar com erro deve estar visível
+        // SnackBar com erro deve estar visÃ­vel
         expect(find.byType(SnackBar), findsOneWidget);
         expect(
           find.textContaining('Erro ao consultar produto'),

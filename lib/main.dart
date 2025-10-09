@@ -1,18 +1,18 @@
-import 'package:coletor_dados/models/inventario_item.dart';
-import 'package:coletor_dados/models/produto.dart';
-import 'package:coletor_dados/providers/config_provider.dart';
-import 'package:coletor_dados/screens/config_screen.dart';
-import 'package:coletor_dados/screens/consulta_preco_screen.dart';
-import 'package:coletor_dados/screens/entrada_screen.dart';
-import 'package:coletor_dados/screens/etiqueta_screen.dart';
-import 'package:coletor_dados/screens/home_screen.dart';
-import 'package:coletor_dados/screens/inventario_screen.dart';
-import 'package:coletor_dados/screens/inventario_update_screen.dart';
-import 'package:coletor_dados/screens/login_screen.dart';
-import 'package:coletor_dados/screens/splash_screen.dart';
-import 'package:coletor_dados/services/api_service.dart';
-import 'package:coletor_dados/services/scanner_service.dart';
 import 'package:flutter/material.dart';
+import 'package:nymbus_coletor/models/inventario_item.dart';
+import 'package:nymbus_coletor/models/produto.dart';
+import 'package:nymbus_coletor/providers/config_provider.dart';
+import 'package:nymbus_coletor/screens/config_screen.dart';
+import 'package:nymbus_coletor/screens/consulta_preco_screen.dart';
+import 'package:nymbus_coletor/screens/entrada_screen.dart';
+import 'package:nymbus_coletor/screens/etiqueta_screen.dart';
+import 'package:nymbus_coletor/screens/home_screen.dart';
+import 'package:nymbus_coletor/screens/inventario_screen.dart';
+import 'package:nymbus_coletor/screens/inventario_update_screen.dart';
+import 'package:nymbus_coletor/screens/login_screen.dart';
+import 'package:nymbus_coletor/screens/splash_screen.dart';
+import 'package:nymbus_coletor/services/api_service.dart';
+import 'package:nymbus_coletor/services/scanner_service.dart';
 import 'package:provider/provider.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Registra handler global de não autorizado (401/403) para redirecionar ao Login
+    // Registra handler global de nÃ£o autorizado (401/403) para redirecionar ao Login
     ApiService.instance.setUnauthorizedHandler(() {
       final nav = _rootNavigatorKey.currentState;
       if (nav == null) return;

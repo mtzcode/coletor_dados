@@ -1,4 +1,4 @@
-class EtiquetaColetor {
+﻿class EtiquetaColetor {
   final int? etqIdx;
   final int? etqId;
   final int? loteId;

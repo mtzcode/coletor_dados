@@ -1,3 +1,5 @@
+import 'package:nymbus_coletor/utils/barcode_utils.dart';
+
 class Produto {
   final String codBarras;
   final String codProduto;
@@ -24,7 +26,7 @@ class Produto {
   });
 
   factory Produto.fromJson(Map<String, dynamic> json, int numeroItem) {
-    // Função auxiliar para converter valores para double de forma segura
+    // FunÃ§Ã£o auxiliar para converter valores para double de forma segura
     double parseDouble(dynamic value) {
       if (value == null) return 0.0;
       if (value is double) return value;
@@ -35,16 +37,14 @@ class Produto {
       return 0.0;
     }
 
-    // Função auxiliar para converter valores para string de forma segura
+    // FunÃ§Ã£o auxiliar para converter valores para string de forma segura
     String parseString(dynamic value) {
       if (value == null) return '';
       return value.toString();
     }
 
     return Produto(
-      codBarras: parseString(json['cod_barras'])
-          .replaceAll(RegExp(r'[\s\r\n\t]'), '')
-          .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), ''),
+      codBarras: BarcodeUtils.sanitize(parseString(json['cod_barras'])),
       codProduto: parseString(json['cod_produto']),
       produto: parseString(json['produto']),
       unidade: parseString(json['unidade']),
@@ -59,9 +59,7 @@ class Produto {
 
   Map<String, dynamic> toJson() {
     return {
-      'cod_barras': codBarras
-          .replaceAll(RegExp(r'[\s\r\n\t]'), '')
-          .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), ''),
+      'cod_barras': BarcodeUtils.sanitize(codBarras),
       'cod_produto': codProduto,
       'produto': produto,
       'unidade': unidade,
@@ -72,6 +70,18 @@ class Produto {
       'qtd_estoque': qtdEstoque,
       'tipo_etiqueta': tipoEtiqueta,
     };
+  }
+
+  // Validação sistemática do modelo
+  List<String> validate() {
+    final errors = <String>[];
+    final cb = BarcodeUtils.sanitize(codBarras);
+    if (cb.isEmpty) errors.add('codBarras vazio ou inválido');
+    if (codProduto.trim().isEmpty) errors.add('codProduto vazio');
+    if (produto.trim().isEmpty) errors.add('produto vazio');
+    if (unidade.trim().isEmpty) errors.add('unidade vazia');
+    if (valorVenda < 0) errors.add('valorVenda negativo');
+    return errors;
   }
 
   String get precoFormatado {

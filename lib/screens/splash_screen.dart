@@ -1,5 +1,5 @@
-import 'package:coletor_dados/providers/config_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:nymbus_coletor/providers/config_provider.dart';
 import 'package:provider/provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -42,30 +42,32 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return const Scaffold(
       backgroundColor: Colors.blue,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inventory_2, size: 80, color: Colors.white),
-            SizedBox(height: 20),
-            Text(
-              'Coletor de Dados',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.inventory_2, size: 80, color: Colors.white),
+              SizedBox(height: 20),
+              Text(
+                'Coletor de Dados',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-            ),
-            SizedBox(height: 40),
-            CircularProgressIndicator(
-               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-             ),
-            SizedBox(height: 20),
-            Text(
-              'Inicializando...',
-              style: TextStyle(fontSize: 16, color: Colors.white70),
-            ),
-          ],
+              SizedBox(height: 40),
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Inicializando...',
+                style: TextStyle(fontSize: 16, color: Colors.white70),
+              ),
+            ],
+          ),
         ),
       ),
     );

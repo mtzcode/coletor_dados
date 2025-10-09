@@ -1,4 +1,4 @@
-package com.example.coletor_dados
+package com.mtzcode.nymbuscoletor
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,12 +1,12 @@
-import 'package:coletor_dados/models/inventario_item.dart';
-import 'package:coletor_dados/models/produto.dart';
-import 'package:coletor_dados/providers/config_provider.dart';
-import 'package:coletor_dados/services/api_service.dart';
-import 'package:coletor_dados/services/feedback_service.dart';
-import 'package:coletor_dados/services/logger_service.dart';
-import 'package:coletor_dados/services/scanner_service.dart';
-import 'package:coletor_dados/services/storage_service.dart';
 import 'package:flutter/material.dart';
+import 'package:nymbus_coletor/models/inventario_item.dart';
+import 'package:nymbus_coletor/models/produto.dart';
+import 'package:nymbus_coletor/providers/config_provider.dart';
+import 'package:nymbus_coletor/services/api_service.dart';
+import 'package:nymbus_coletor/services/feedback_service.dart';
+import 'package:nymbus_coletor/services/logger_service.dart';
+import 'package:nymbus_coletor/services/scanner_service.dart';
+import 'package:nymbus_coletor/services/storage_service.dart';
 import 'package:provider/provider.dart';
 
 class InventarioScreen extends StatefulWidget {
@@ -71,7 +71,8 @@ class _InventarioScreenState extends State<InventarioScreen> {
 
   Future<void> _abrirScanner() async {
     try {
-      final codigo = await ScannerService.scanBarcode(context);
+      final ctx = context;
+      final codigo = await ScannerService.scanBarcode(ctx);
       if (!mounted) return;
       if (codigo != null && codigo.isNotEmpty) {
         _codigoController.text = codigo;
@@ -92,16 +93,18 @@ class _InventarioScreenState extends State<InventarioScreen> {
       return;
     }
 
+    // Guarda de configuração/licença
+    final configProvider = Provider.of<ConfigProvider>(context, listen: false);
+    if (!configProvider.isConfigured || configProvider.config.licenca.isEmpty) {
+      await FeedbackService.showConfigRequiredDialog(context);
+      return;
+    }
+
     setState(() {
       _isSearching = true;
     });
 
     try {
-      final configProvider = Provider.of<ConfigProvider>(
-        context,
-        listen: false,
-      );
-
       // Configura a API se necessário
       if (configProvider.config.endereco.isNotEmpty &&
           configProvider.config.porta.isNotEmpty) {
@@ -209,6 +212,13 @@ class _InventarioScreenState extends State<InventarioScreen> {
       return;
     }
 
+    // Guarda de configuração/licença antes de enviar
+    final configProvider = Provider.of<ConfigProvider>(context, listen: false);
+    if (!configProvider.isConfigured || configProvider.config.licenca.isEmpty) {
+      await FeedbackService.showConfigRequiredDialog(context);
+      return;
+    }
+
     // Capture o Navigator antes de qualquer await para evitar uso de context após async gap
     final navigator = Navigator.of(context);
 
@@ -254,120 +264,128 @@ class _InventarioScreenState extends State<InventarioScreen> {
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
       ),
-      body: Column(
-        children: [
-          // Campo de pesquisa
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.grey[100],
-            child: Column(
-              children: [
-                // Texto de orientação
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: const Text(
-                    'Digite o código ou use a câmera para escanear',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                TextField(
-                  controller: _codigoController,
-                  decoration: InputDecoration(
-                    labelText: 'Código do produto',
-                    hintText: 'Digite o código de barras',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: IconButton(
-                      icon: const Icon(Icons.camera_alt),
-                      onPressed: _abrirScanner,
-                      tooltip: 'Escanear código de barras',
-                    ),
-                  ),
-                  onSubmitted: (_) => _pesquisarProduto(),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isSearching ? null : _pesquisarProduto,
-                    icon: _isSearching
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.search),
-                    label: Text(_isSearching ? 'Pesquisando...' : 'Pesquisar'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Lista de itens do inventário
-          Expanded(
-            child: _itensInventario.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.inventory, size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
-                          'Nenhum item no inventário',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Pesquise produtos para adicionar ao inventário',
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _itensInventario.length,
-                    itemBuilder: (context, index) {
-                      final item = _itensInventario[index];
-                      return _buildItemCard(item, index);
-                    },
-                  ),
-          ),
-
-          // Botão de enviar inventário
-          if (_itensInventario.isNotEmpty)
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Campo de pesquisa
             Container(
               padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _enviarInventario,
-                  icon: const Icon(Icons.send),
-                  label: Text(
-                    'Enviar Inventário (${_itensInventario.length} itens)',
+              color: Colors.grey[100],
+              child: Column(
+                children: [
+                  // Texto de orientação
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: const Text(
+                      'Digite o código ou use a câmera para escanear',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  TextField(
+                    controller: _codigoController,
+                    decoration: InputDecoration(
+                      labelText: 'Código do produto',
+                      hintText: 'Digite o código de barras',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: IconButton(
+                        icon: const Icon(Icons.camera_alt),
+                        onPressed: _abrirScanner,
+                        tooltip: 'Escanear código de barras',
+                      ),
+                    ),
+                    onSubmitted: (_) => _pesquisarProduto(),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isSearching ? null : _pesquisarProduto,
+                      icon: _isSearching
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.search),
+                      label: Text(
+                        _isSearching ? 'Pesquisando...' : 'Pesquisar',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Lista de itens do inventário
+            Expanded(
+              child: _itensInventario.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inventory, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text(
+                            'Nenhum item no inventário',
+                            style: TextStyle(fontSize: 18, color: Colors.grey),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Pesquise produtos para adicionar ao inventário',
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _itensInventario.length,
+                      itemBuilder: (context, index) {
+                        final item = _itensInventario[index];
+                        return _buildItemCard(item, index);
+                      },
+                    ),
+            ),
+
+            // Botão de enviar inventário movido para bottomNavigationBar para evitar overflow
+            const SizedBox.shrink(),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _itensInventario.isNotEmpty
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _enviarInventario,
+                    icon: const Icon(Icons.send),
+                    label: Text(
+                      'Enviar Inventário (${_itensInventario.length} itens)',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
-      ),
+            )
+          : null,
     );
   }
 

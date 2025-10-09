@@ -1,12 +1,12 @@
-import 'package:coletor_dados/models/inventario_item.dart';
-import 'package:coletor_dados/models/produto.dart';
-import 'package:coletor_dados/providers/config_provider.dart';
-import 'package:coletor_dados/services/api_service.dart';
-import 'package:coletor_dados/services/feedback_service.dart';
-import 'package:coletor_dados/services/logger_service.dart';
-import 'package:coletor_dados/services/scanner_service.dart';
-import 'package:coletor_dados/services/storage_service.dart';
 import 'package:flutter/material.dart';
+import 'package:nymbus_coletor/models/inventario_item.dart';
+import 'package:nymbus_coletor/models/produto.dart';
+import 'package:nymbus_coletor/providers/config_provider.dart';
+import 'package:nymbus_coletor/services/api_service.dart';
+import 'package:nymbus_coletor/services/feedback_service.dart';
+import 'package:nymbus_coletor/services/logger_service.dart';
+import 'package:nymbus_coletor/services/scanner_service.dart';
+import 'package:nymbus_coletor/services/storage_service.dart';
 import 'package:provider/provider.dart';
 
 class EntradaScreen extends StatefulWidget {
@@ -71,7 +71,8 @@ class _EntradaScreenState extends State<EntradaScreen> {
 
   Future<void> _abrirScanner() async {
     try {
-      final codigo = await ScannerService.scanBarcode(context);
+      final ctx = context;
+      final codigo = await ScannerService.scanBarcode(ctx);
       if (!mounted) return;
       if (codigo != null && codigo.isNotEmpty) {
         _codigoController.text = codigo;
@@ -92,17 +93,18 @@ class _EntradaScreenState extends State<EntradaScreen> {
       return;
     }
 
+    // Guarda de configuração/licença
+    final configProvider = Provider.of<ConfigProvider>(context, listen: false);
+    if (!configProvider.isConfigured || configProvider.config.licenca.isEmpty) {
+      await FeedbackService.showConfigRequiredDialog(context);
+      return;
+    }
+
     setState(() {
       _isSearching = true;
     });
 
     try {
-      final configProvider = Provider.of<ConfigProvider>(
-        context,
-        listen: false,
-      );
-      // Removido: final navigator = Navigator.of(context);
-
       // Configura a API se necessário
       if (configProvider.config.endereco.isNotEmpty &&
           configProvider.config.porta.isNotEmpty) {
@@ -210,6 +212,13 @@ class _EntradaScreenState extends State<EntradaScreen> {
       return;
     }
 
+    // Guarda de configuração/licença antes de enviar
+    final configProvider = Provider.of<ConfigProvider>(context, listen: false);
+    if (!configProvider.isConfigured || configProvider.config.licenca.isEmpty) {
+      await FeedbackService.showConfigRequiredDialog(context);
+      return;
+    }
+
     try {
       final navigator = Navigator.of(context);
       await ApiService.instance.enviarEntrada(_itensEntrada);
@@ -217,8 +226,15 @@ class _EntradaScreenState extends State<EntradaScreen> {
       _showMessage('Entrada enviada com sucesso!');
       setState(() {
         _itensEntrada.clear();
+        _contadorItens = 1;
       });
+
+      // Limpa os itens salvos no armazenamento local
       await StorageService.clearEntradaItens();
+
+      // Garanta que o widget ainda está montado antes de navegar
+      if (!mounted) return;
+      // Volta para Home limpando a pilha
       navigator.pushNamedAndRemoveUntil('/home', (route) => false);
     } catch (e) {
       if (mounted) {
@@ -244,118 +260,128 @@ class _EntradaScreenState extends State<EntradaScreen> {
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
       ),
-      body: Column(
-        children: [
-          // Campo de pesquisa
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.grey[100],
-            child: Column(
-              children: [
-                // Texto de orientação
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: const Text(
-                    'Digite o código ou use a câmera para escanear',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                TextField(
-                  controller: _codigoController,
-                  decoration: InputDecoration(
-                    labelText: 'Código do produto',
-                    hintText: 'Digite o código de barras',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: IconButton(
-                      icon: const Icon(Icons.camera_alt),
-                      onPressed: _abrirScanner,
-                      tooltip: 'Escanear código de barras',
-                    ),
-                  ),
-                  onSubmitted: (_) => _pesquisarProduto(),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isSearching ? null : _pesquisarProduto,
-                    icon: _isSearching
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.search),
-                    label: Text(_isSearching ? 'Pesquisando...' : 'Pesquisar'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Lista de itens da entrada
-          Expanded(
-            child: _itensEntrada.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.input, size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
-                          'Nenhum item na entrada',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Pesquise produtos para adicionar à entrada',
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _itensEntrada.length,
-                    itemBuilder: (context, index) {
-                      final item = _itensEntrada[index];
-                      return _buildItemCard(item, index);
-                    },
-                  ),
-          ),
-
-          // Botão de enviar entrada
-          if (_itensEntrada.isNotEmpty)
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Campo de pesquisa
             Container(
               padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _enviarEntrada,
-                  icon: const Icon(Icons.send),
-                  label: Text('Enviar Entrada (${_itensEntrada.length} itens)'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+              color: Colors.grey[100],
+              child: Column(
+                children: [
+                  // Texto de orientação
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: const Text(
+                      'Digite o código ou use a câmera para escanear',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  TextField(
+                    controller: _codigoController,
+                    decoration: InputDecoration(
+                      labelText: 'Código do produto',
+                      hintText: 'Digite o código de barras',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: IconButton(
+                        icon: const Icon(Icons.camera_alt),
+                        onPressed: _abrirScanner,
+                        tooltip: 'Escanear código de barras',
+                      ),
+                    ),
+                    onSubmitted: (_) => _pesquisarProduto(),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isSearching ? null : _pesquisarProduto,
+                      icon: _isSearching
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.search),
+                      label: Text(
+                        _isSearching ? 'Pesquisando...' : 'Pesquisar',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Lista de itens da entrada
+            Expanded(
+              child: _itensEntrada.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.input, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text(
+                            'Nenhum item na entrada',
+                            style: TextStyle(fontSize: 18, color: Colors.grey),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Pesquise produtos para adicionar à entrada',
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _itensEntrada.length,
+                      itemBuilder: (context, index) {
+                        final item = _itensEntrada[index];
+                        return _buildItemCard(item, index);
+                      },
+                    ),
+            ),
+
+            // Botão de enviar entrada movido para bottomNavigationBar
+            const SizedBox.shrink(),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _itensEntrada.isNotEmpty
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _enviarEntrada,
+                    icon: const Icon(Icons.send),
+                    label: Text(
+                      'Enviar Entrada (${_itensEntrada.length} itens)',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
-      ),
+            )
+          : null,
     );
   }
 
